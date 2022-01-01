@@ -4,6 +4,7 @@
 #include "textdialog.h"
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QGraphicsPixmapItem>
 
 ShapeletMain::ShapeletMain(QWidget *parent)
     : QMainWindow(parent)
@@ -24,8 +25,10 @@ void ShapeletMain::on_actionOpen_FITS_triggered()
         tr("Open FITS"), ".", tr("FITS Files (*.fits *.FITS)"));
     if (fileName==nullptr) {
       QMessageBox msg;
-      msg.setText(tr("No file opened"));
+      msg.setText(tr("Cannot open FITS file"));
       msg.exec();
+    } else {
+
     }
 }
 
@@ -36,12 +39,19 @@ void ShapeletMain::on_actionExit_triggered()
 
 void ShapeletMain::on_actionRun_single_triggered()
 {
-
+  QGraphicsPixmapItem *item=new QGraphicsPixmapItem(QPixmap("/rec/modelFITS.png"));
+  item->setScale(1.0);
+  //item->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
+  ui->graphicsView->scene->addItem(item);
+  item->setPos(100,100);
+  ui->graphicsView->scene->setSceneRect(0,0,400,400);
+  ui->graphicsView->scene->addRect(QRectF(0, 0, 100, 100));
+  ui->graphicsView->show();
 }
 
 void ShapeletMain::on_actionRun_multifrequency_triggered()
 {
-
+   ui->graphicsView->scene->clear();
 }
 
 void ShapeletMain::on_actionSettings_triggered()
@@ -65,8 +75,10 @@ void ShapeletMain::on_actionOpen_Directory_triggered()
         tr("Open Directory"), ".", QFileDialog::ShowDirsOnly|QFileDialog::DontResolveSymlinks);
     if (dirName==nullptr) {
       QMessageBox msg;
-      msg.setText(tr("No directory opened"));
+      msg.setText(tr("Cannot open directory"));
       msg.exec();
+    } else {
+        ui->graphicsView->setDirName(dirName);
     }
 }
 

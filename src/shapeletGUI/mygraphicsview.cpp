@@ -88,3 +88,23 @@ void MyGraphicsView::setTf(bool tf)
 {
 tf_ = tf;
 }
+
+QString MyGraphicsView::fileName() const
+{
+    return file_name_;
+}
+
+void MyGraphicsView::setFileName(QString file_name)
+{
+    file_name_ = file_name;
+}
+
+QString MyGraphicsView::dirName() const
+{
+    return dir_name_;
+}
+
+void MyGraphicsView::setDirName(QString dir_name)
+{
+    dir_name_ = dir_name;
+}

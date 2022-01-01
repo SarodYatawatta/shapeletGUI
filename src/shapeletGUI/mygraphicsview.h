@@ -26,11 +26,12 @@
 class MyGraphicsView : public QGraphicsView
 {
 public:
- MyGraphicsView(QWidget *parent=0) : QGraphicsView(parent ),
- scene(new QGraphicsScene) {
-
+ MyGraphicsView(QWidget *parent=0) : QGraphicsView(parent )
+ {
+   scene=new QGraphicsScene(this);
+   this->setScene(scene);
  }
- ~MyGraphicsView() { delete scene; }
+ ~MyGraphicsView() {delete scene;}
 
  int modes() const;
  void setModes(int modes);
@@ -53,8 +54,15 @@ public:
  bool tf() const;
  void setTf(bool tf);
 
-private:
+
+ QString fileName() const;
+ void setFileName(QString file_name);
+
+ QString dirName() const;
+ void setDirName(QString dir_name);
+
  QGraphicsScene *scene;
+private:
 
  int modes_;
  double scale_;
@@ -63,6 +71,9 @@ private:
  double xscale_;
  double yscale_;
  bool tf_;
+
+ QString file_name_;
+ QString dir_name_;
 };
 
 
