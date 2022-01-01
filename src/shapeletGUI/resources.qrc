@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>rec/modelFITS.png</file>
+        <file>rec/openFITS.png</file>
+    </qresource>
+</RCC>
