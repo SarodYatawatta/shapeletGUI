@@ -56,7 +56,17 @@ void ShapeletMain::on_actionRun_multifrequency_triggered()
 
 void ShapeletMain::on_actionSettings_triggered()
 {
- OptionsDialog *opt=new OptionsDialog(this, 100, 2.0, 0.9, 0.0, 1.0, 1.0, false);
+ OptionsDialog *opt=new OptionsDialog(this,
+    ui->graphicsView->modes(),
+    ui->graphicsView->scale(),
+    ui->graphicsView->cutoff(),
+    ui->graphicsView->xscale(),
+    ui->graphicsView->yscale(),
+    ui->graphicsView->rotation(),
+    ui->graphicsView->tf(),
+    ui->graphicsView->xoff(),
+    ui->graphicsView->yoff()
+    );
 
  if (opt->exec()== QDialog::Accepted) {
     ui->graphicsView->setModes(opt->modes());
@@ -66,6 +76,8 @@ void ShapeletMain::on_actionSettings_triggered()
     ui->graphicsView->setYscale(opt->yscale());
     ui->graphicsView->setRotation(opt->rotation());
     ui->graphicsView->setTf(opt->tf());
+    ui->graphicsView->setXoff(opt->xoff());
+    ui->graphicsView->setYoff(opt->yoff());
  }
 }
 

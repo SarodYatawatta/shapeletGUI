@@ -30,6 +30,17 @@ public:
  {
    scene=new QGraphicsScene(this);
    this->setScene(scene);
+
+   // set default options
+   this->setModes(-1);
+   this->setScale(-1.0);
+   this->setCutoff(0.9);
+   this->setXscale(1.0);
+   this->setYscale(1.0);
+   this->setRotation(0.0);
+   this->setXoff(0.0);
+   this->setYoff(0.0);
+   this->setTf(false);
  }
  ~MyGraphicsView() {delete scene;}
 
@@ -62,6 +73,12 @@ public:
  void setDirName(QString dir_name);
 
  QGraphicsScene *scene;
+ double xoff() const;
+ void setXoff(double xoff);
+
+ double yoff() const;
+ void setYoff(double yoff);
+
 private:
 
  int modes_;
@@ -71,6 +88,8 @@ private:
  double xscale_;
  double yscale_;
  bool tf_;
+ double xoff_;
+ double yoff_;
 
  QString file_name_;
  QString dir_name_;

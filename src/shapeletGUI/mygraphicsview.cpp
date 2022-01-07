@@ -108,3 +108,23 @@ void MyGraphicsView::setDirName(QString dir_name)
 {
     dir_name_ = dir_name;
 }
+
+double MyGraphicsView::xoff() const
+{
+    return xoff_;
+}
+
+void MyGraphicsView::setXoff(double xoff)
+{
+    xoff_ = xoff;
+}
+
+double MyGraphicsView::yoff() const
+{
+    return yoff_;
+}
+
+void MyGraphicsView::setYoff(double yoff)
+{
+    yoff_ = yoff;
+}

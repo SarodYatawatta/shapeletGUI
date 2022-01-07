@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>610</width>
-    <height>504</height>
+    <width>645</width>
+    <height>523</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,24 +21,24 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="1" colspan="2">
+   <item row="0" column="2" colspan="3">
     <widget class="QLineEdit" name="lineEdit_cutoff">
      <property name="toolTip">
-      <string>Cutoff value between 0 and 1</string>
+      <string>Cutoff value between 0 and 1, as a fraction of the peak value</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item row="1" column="0" colspan="2">
     <widget class="QLabel" name="label_beta">
      <property name="text">
       <string>Scale (beta)</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1" colspan="2">
-    <widget class="QLineEdit" name="lineEdit_beta">
+   <item row="1" column="2" colspan="3">
+    <widget class="QLineEdit" name="lineEdit_scale">
      <property name="toolTip">
-      <string>Positive value for basis scale factor</string>
+      <string>Positive value for basis scale factor, use -1 to determine this automatically</string>
      </property>
     </widget>
    </item>
@@ -49,21 +49,21 @@
      </property>
     </widget>
    </item>
-   <item row="2" column="1" colspan="2">
+   <item row="2" column="2" colspan="3">
     <widget class="QLineEdit" name="lineEdit_modes">
      <property name="toolTip">
-      <string>Maximum number of basis functions</string>
+      <string>Maximum number of basis functions, use -1 to determine this automatically</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="4">
+   <item row="3" column="0" colspan="6">
     <widget class="Line" name="line">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
+   <item row="4" column="0" colspan="3">
     <widget class="QCheckBox" name="checkBox_tf">
      <property name="toolTip">
       <string>Enable linear transform of basis functions</string>
@@ -73,17 +73,17 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="2">
+   <item row="4" column="3" colspan="2">
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>Rotation</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="3">
+   <item row="4" column="5">
     <widget class="QLineEdit" name="lineEdit_rotation">
      <property name="toolTip">
-      <string>Rotation angle in degrees</string>
+      <string>Rotate axes by this amount, angle in degrees</string>
      </property>
     </widget>
    </item>
@@ -94,35 +94,63 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="1">
+   <item row="5" column="1" colspan="3">
     <widget class="QLineEdit" name="lineEdit_xscale">
      <property name="toolTip">
       <string>X axis scale factor, positive value</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="2">
+   <item row="5" column="4">
     <widget class="QLabel" name="label_4">
      <property name="text">
       <string>Y scale</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="3">
+   <item row="5" column="5">
     <widget class="QLineEdit" name="lineEdit_yscale">
      <property name="toolTip">
       <string>Y axis scale factor, positive value</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="4">
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>X offset</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="2">
+    <widget class="QLineEdit" name="lineEdit_xoff">
+     <property name="toolTip">
+      <string>Shift origin by this amount of pixels</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="4">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Y offset</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="5">
+    <widget class="QLineEdit" name="lineEdit_yoff">
+     <property name="toolTip">
+      <string>Shift origin by this amount of pixels</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="6">
     <widget class="Line" name="line_2">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item row="7" column="2" colspan="2">
+   <item row="8" column="4" colspan="2">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
