@@ -128,3 +128,25 @@ void MyGraphicsView::setYoff(double yoff)
 {
     yoff_ = yoff;
 }
+
+
+int MyGraphicsView::readFITSFile(void)
+{
+
+   long int naxis[4]={0,0,0,0};
+   io_buff filep;
+   int ignore_wcs=0;
+   double clipmin=0.0;
+   double clipmax=0.0;
+   int use_mask=0;
+   int Nm=0;
+ 
+   if (this->pix) { free(this->pix); }
+   if (this->x) { free(this->x); }
+   if (this->y) { free(this->y); }
+
+   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix),naxis,&(this->x),&(this->y),&filep,ignore_wcs,&(this->cen_),0,0,0,0,this->xoff(),this->yoff(),clipmin,clipmax,use_mask, &Nm);
+   close_fits_file(filep);
+
+   return 0;
+}

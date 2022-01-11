@@ -48,3 +48,8 @@ INCLUDEPATH += . $$PWD/../ /usr/include/wcslib
 DEPENDPATH += $$PWD/../
 
 unix: PRE_TARGETDEPS += $$PWD/../lib/libshapelet.a
+
+INCLUDEPATH += $$PWD/../lib
+DEPENDPATH += $$PWD/../lib
+
+unix: PRE_TARGETDEPS += $$PWD/../lib/libshapelet.a

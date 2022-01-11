@@ -23,6 +23,9 @@
 #include <QWidget>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+
+#include "shapelet.h"
+
 class MyGraphicsView : public QGraphicsView
 {
 public:
@@ -41,8 +44,17 @@ public:
    this->setXoff(0.0);
    this->setYoff(0.0);
    this->setTf(false);
+
+   this->pix=nullptr;
+   this->x=nullptr;
+   this->y=nullptr;
  }
- ~MyGraphicsView() {delete scene;}
+ ~MyGraphicsView() {
+   delete scene;
+   if (this->pix) { free(this->pix); }
+   if (this->x) { free(this->x); }
+   if (this->y) { free(this->y); }
+ }
 
  int modes() const;
  void setModes(int modes);
@@ -72,15 +84,19 @@ public:
  QString dirName() const;
  void setDirName(QString dir_name);
 
- QGraphicsScene *scene;
  double xoff() const;
  void setXoff(double xoff);
 
  double yoff() const;
  void setYoff(double yoff);
 
+ QGraphicsScene *scene;
+
+ int readFITSFile();
+
 private:
 
+ // variables for decomposition
  int modes_;
  double scale_;
  double cutoff_;
@@ -93,6 +109,14 @@ private:
 
  QString file_name_;
  QString dir_name_;
+
+ // variables for FITS IO
+ position cen_;
+ // storage (will be allocated while reading file)
+ double *pix; // pixel values
+ double *x; // l grid values
+ double *y; // m grid values
+
 };
 
 

@@ -1,7 +1,8 @@
 #include "optionsdialog.h"
 #include "ui_optionsdialog.h"
 
-OptionsDialog::OptionsDialog(QWidget *parent, int modes, double scale, double cutoff, double rotation,
+OptionsDialog::OptionsDialog(QWidget *parent, int modes, double scale, 
+    double cutoff, double rotation,
  double xscale, double yscale, bool tf, double xoff, double yoff) :
     QDialog(parent),
     ui(new Ui::OptionsDialog),

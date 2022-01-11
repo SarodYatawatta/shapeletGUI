@@ -5,6 +5,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QGraphicsPixmapItem>
+#include <iostream>
 
 ShapeletMain::ShapeletMain(QWidget *parent)
     : QMainWindow(parent)
@@ -28,7 +29,9 @@ void ShapeletMain::on_actionOpen_FITS_triggered()
       msg.setText(tr("Cannot open FITS file"));
       msg.exec();
     } else {
-
+std::cout<<"Opening "<<fileName.toLocal8Bit().data()<<std::endl;
+    ui->graphicsView->setFileName(fileName);
+    ui->graphicsView->readFITSFile();
     }
 }
 
@@ -52,6 +55,8 @@ void ShapeletMain::on_actionRun_single_triggered()
 void ShapeletMain::on_actionRun_multifrequency_triggered()
 {
    ui->graphicsView->scene->clear();
+
+std::cout<<"Opening "<< ui->graphicsView->fileName().toLocal8Bit().data()<<std::endl;
 }
 
 void ShapeletMain::on_actionSettings_triggered()
@@ -60,9 +65,9 @@ void ShapeletMain::on_actionSettings_triggered()
     ui->graphicsView->modes(),
     ui->graphicsView->scale(),
     ui->graphicsView->cutoff(),
+    ui->graphicsView->rotation(),
     ui->graphicsView->xscale(),
     ui->graphicsView->yscale(),
-    ui->graphicsView->rotation(),
     ui->graphicsView->tf(),
     ui->graphicsView->xoff(),
     ui->graphicsView->yoff()
@@ -70,11 +75,11 @@ void ShapeletMain::on_actionSettings_triggered()
 
  if (opt->exec()== QDialog::Accepted) {
     ui->graphicsView->setModes(opt->modes());
-    ui->graphicsView->setCutoff(opt->cutoff());
     ui->graphicsView->setScale(opt->scale());
+    ui->graphicsView->setCutoff(opt->cutoff());
+    ui->graphicsView->setRotation(opt->rotation());
     ui->graphicsView->setXscale(opt->xscale());
     ui->graphicsView->setYscale(opt->yscale());
-    ui->graphicsView->setRotation(opt->rotation());
     ui->graphicsView->setTf(opt->tf());
     ui->graphicsView->setXoff(opt->xoff());
     ui->graphicsView->setYoff(opt->yoff());
