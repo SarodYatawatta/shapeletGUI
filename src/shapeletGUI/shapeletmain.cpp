@@ -42,14 +42,16 @@ void ShapeletMain::on_actionExit_triggered()
 
 void ShapeletMain::on_actionRun_single_triggered()
 {
-  QGraphicsPixmapItem *item=new QGraphicsPixmapItem(QPixmap("/rec/modelFITS.png"));
-  item->setScale(1.0);
+  //QGraphicsPixmapItem *item=new QGraphicsPixmapItem(QPixmap("/rec/modelFITS.png"));
+  //item->setScale(1.0);
   //item->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
-  ui->graphicsView->scene->addItem(item);
-  item->setPos(100,100);
-  ui->graphicsView->scene->setSceneRect(0,0,400,400);
-  ui->graphicsView->scene->addRect(QRectF(0, 0, 100, 100));
-  ui->graphicsView->show();
+  //ui->graphicsView->scene->addItem(item);
+  //item->setPos(100,100);
+  //ui->graphicsView->scene->setSceneRect(0,0,400,400);
+  //ui->graphicsView->scene->addRect(QRectF(0, 0, 100, 100));
+  //ui->graphicsView->show();
+
+  ui->graphicsView->decompose();
 }
 
 void ShapeletMain::on_actionRun_multifrequency_triggered()

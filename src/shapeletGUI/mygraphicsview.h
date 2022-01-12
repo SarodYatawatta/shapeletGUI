@@ -26,12 +26,21 @@
 
 #include "shapelet.h"
 
+#ifndef CANVAS_WIDTH
+#define CANVAS_WIDTH 600
+#endif
+#ifndef CANVAS_HEIGHT
+#define CANVAS_HEIGHT 600
+#endif
+
 class MyGraphicsView : public QGraphicsView
 {
 public:
  MyGraphicsView(QWidget *parent=0) : QGraphicsView(parent )
  {
    scene=new QGraphicsScene(this);
+   // set default scene centered at half width,height with width,height
+   scene->setSceneRect(CANVAS_WIDTH/2.0,CANVAS_HEIGHT/2.0,CANVAS_WIDTH,CANVAS_HEIGHT);
    this->setScene(scene);
 
    // set default options
@@ -94,6 +103,11 @@ public:
 
  int readFITSFile();
 
+ int decompose();
+
+protected:
+ QRgb getRGB(double z, double maxval);
+ QImage* createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array=false);
 private:
 
  // variables for decomposition

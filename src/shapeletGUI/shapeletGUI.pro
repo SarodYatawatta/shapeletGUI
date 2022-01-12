@@ -42,7 +42,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     resources.qrc
 
-unix: LIBS += -L$$PWD/../lib/ -L/usr/lib -lshapelet -lm -lwcs -lcfitsio
+unix: LIBS += -L$$PWD/../lib/ -L/usr/lib -lshapelet -lm -lwcs -lcfitsio -lopenblas -lpthread -lgfortran
 
 INCLUDEPATH += . $$PWD/../ /usr/include/wcslib
 DEPENDPATH += $$PWD/../

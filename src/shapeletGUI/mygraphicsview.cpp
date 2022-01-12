@@ -18,7 +18,7 @@
 */
 
 #include "mygraphicsview.h"
-
+#include <iostream>
 int MyGraphicsView::modes() const
 {
 return modes_;
@@ -129,6 +129,64 @@ void MyGraphicsView::setYoff(double yoff)
     yoff_ = yoff;
 }
 
+QRgb MyGraphicsView::getRGB(double z, double maxval) {
+ if (maxval==0) {
+    return qRgb(1,1,1);
+ }
+
+ double cl=z/maxval;
+ //std::cout<<"z="<<z<<"/ "<<maxval<<"="<<cl<<std::endl;
+ if (cl<0.25) {
+  return qRgb(0,int(cl*256*4),255);
+ } else if (cl<0.5) {
+  return qRgb(0,255,int((2-cl*4)*256));
+ } else if (cl<0.75) {
+  return qRgb(int((cl*4-2)*256),255,0);
+ }
+ // else
+  return qRgb(255,int((4-cl*4)*256),0);
+}
+
+QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array) {
+  int idmax=idamax(Nx*Ny,data,1)-1; /* 0.. */
+  *maxval=data[idmax];
+  double *data1=new double[Nx*Ny];
+  dcopy(Nx*Ny,data,data1);
+  /* subtract maxval to get the -ve high value */
+  daxpy(Nx*Ny,data,-1.0*(*maxval),data1);
+  int idmin=idamin(Nx*Ny,data1,1)-1;
+  *minval=data[idmin];
+  std::cout<<"Max "<<idmax<<" "<<*maxval<< " Min "<<idmin<<" "<<*minval<<std::endl;
+  //create Image
+  QImage *qim;
+  if (fortran_array) {
+   qim=new QImage(Nx,Ny,QImage::Format_RGB32);
+  } else {
+   qim=new QImage(Ny,Nx,QImage::Format_RGB32);
+  }
+  qim->fill(qRgb(255,255,255));
+  //fill pixel values -- reverse x
+  std::cout<<"Fort "<<fortran_array<<std::endl;
+  if (fortran_array) {
+   for (int ii=0; ii<Nx; ii++) {
+    for (int jj=0; jj<Ny; jj++) {
+      //qim->setPixel(ii,jj,getRGB(ia(Ny-jj-1,ii)-*minval,*maxval-*minval));
+      qim->setPixel(ii,jj,getRGB(data[(Ny-1-jj)*Nx+ii]-*minval,*maxval-*minval));
+    }
+   }
+  } else {
+   for (int ii=0; ii<Ny; ii++) {
+    for (int jj=0; jj<Nx; jj++) {
+      qim->setPixel(ii,jj,getRGB(data[ii*Ny+jj]-*minval,*maxval-*minval));
+    }
+   }
+  }
+
+  delete[] data1;
+  return qim;
+
+}
+
 
 int MyGraphicsView::readFITSFile(void)
 {
@@ -140,13 +198,38 @@ int MyGraphicsView::readFITSFile(void)
    double clipmax=0.0;
    int use_mask=0;
    int Nm=0;
+   int xlow=0;
+   int xhigh=0;
+   int ylow=0;
+   int yhigh=0;
  
    if (this->pix) { free(this->pix); }
    if (this->x) { free(this->x); }
    if (this->y) { free(this->y); }
 
-   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix),naxis,&(this->x),&(this->y),&filep,ignore_wcs,&(this->cen_),0,0,0,0,this->xoff(),this->yoff(),clipmin,clipmax,use_mask, &Nm);
+   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix),naxis,&(this->x),&(this->y),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),clipmin,clipmax,use_mask, &Nm);
    close_fits_file(filep);
 
+   double minval;
+   double maxval;
+   QImage *qim=createArrayImage(this->pix,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
+   //scale to match canvas size
+   QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+   delete qim;
+   scene->clear();
+   std::cout<<"Scene="<<scene->height()<<","<<scene->width()<<std::endl;
+   std::cout<<"Image="<<qimc.height()<<","<<qimc.width()<<std::endl;
+   scene->addPixmap(QPixmap::fromImage(qimc));
+   this->show();
+
    return 0;
+}
+
+
+
+int MyGraphicsView::decompose(void)
+{
+  assert(this->pix);
+
+  return 0;
 }
