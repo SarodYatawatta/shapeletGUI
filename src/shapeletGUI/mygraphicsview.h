@@ -53,16 +53,23 @@ public:
    this->setXoff(0.0);
    this->setYoff(0.0);
    this->setTf(false);
+   this->setClipmin(0.0);
+   this->setClipmax(0.0);
+   this->setConvolve_psf(true);
 
-   this->pix=nullptr;
-   this->x=nullptr;
-   this->y=nullptr;
+   this->pix_=nullptr;
+   this->x_=nullptr;
+   this->y_=nullptr;
+   this->av_=nullptr;
+   this->z_=nullptr;
  }
  ~MyGraphicsView() {
    delete scene;
-   if (this->pix) { free(this->pix); }
-   if (this->x) { free(this->x); }
-   if (this->y) { free(this->y); }
+   if (this->pix_) { free(this->pix_); }
+   if (this->x_) { free(this->x_); }
+   if (this->y_) { free(this->y_); }
+   if (this->av_) { free(this->av_); }
+   if (this->z_) { free(this->z_); }
  }
 
  int modes() const;
@@ -105,21 +112,36 @@ public:
 
  int decompose();
 
+ double clipmin() const;
+ void setClipmin(double clipmin);
+
+ double clipmax() const;
+ void setClipmax(double clipmax);
+
+ bool convolve_psf() const;
+ void setConvolve_psf(bool convolve_psf);
+
 protected:
  QRgb getRGB(double z, double maxval);
  QImage* createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array=false);
 private:
 
  // variables for decomposition
- int modes_;
- double scale_;
+ int modes_; // upper limit for no. of modes
+ int n0_; // actual number of modes, modes>n0*n0
+ double scale_; // scale=beta
  double cutoff_;
+ // linear transform parameters
  double rotation_;
  double xscale_;
  double yscale_;
  bool tf_;
  double xoff_;
  double yoff_;
+ double clipmin_;
+ double clipmax_;
+ // convolve with PSF
+ int convolve_psf_;
 
  QString file_name_;
  QString dir_name_;
@@ -127,10 +149,13 @@ private:
  // variables for FITS IO
  position cen_;
  // storage (will be allocated while reading file)
- double *pix; // pixel values
- double *x; // l grid values
- double *y; // m grid values
-
+ double *pix_; // pixel values
+ double *x_; // l grid values
+ double *y_; // m grid values
+ // array of solutions
+ double *av_; // size n0*n0
+ // reconstructed image
+ double *z_; // size equal to image
 };
 
 

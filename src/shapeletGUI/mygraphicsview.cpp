@@ -18,6 +18,9 @@
 */
 
 #include "mygraphicsview.h"
+#include <QGraphicsPixmapItem>
+#include <QMessageBox>
+
 #include <iostream>
 int MyGraphicsView::modes() const
 {
@@ -187,15 +190,43 @@ QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *m
 
 }
 
+bool MyGraphicsView::convolve_psf() const
+{
+    return convolve_psf_;
+}
+
+void MyGraphicsView::setConvolve_psf(bool convolve_psf)
+{
+    convolve_psf_ = convolve_psf;
+}
+
+double MyGraphicsView::clipmax() const
+{
+    return clipmax_;
+}
+
+void MyGraphicsView::setClipmax(double clipmax)
+{
+    clipmax_ = clipmax;
+}
+
+double MyGraphicsView::clipmin() const
+{
+    return clipmin_;
+}
+
+void MyGraphicsView::setClipmin(double clipmin)
+{
+    clipmin_ = clipmin;
+}
+
 
 int MyGraphicsView::readFITSFile(void)
 {
-
-   long int naxis[4]={0,0,0,0};
-   io_buff filep;
-   int ignore_wcs=0;
-   double clipmin=0.0;
-   double clipmax=0.0;
+    
+    long int naxis[4]={0,0,0,0};
+    io_buff filep;
+    int ignore_wcs=0;
    int use_mask=0;
    int Nm=0;
    int xlow=0;
@@ -203,23 +234,26 @@ int MyGraphicsView::readFITSFile(void)
    int ylow=0;
    int yhigh=0;
  
-   if (this->pix) { free(this->pix); }
-   if (this->x) { free(this->x); }
-   if (this->y) { free(this->y); }
+   if (this->pix_) { free(this->pix_); }
+   if (this->x_) { free(this->x_); }
+   if (this->y_) { free(this->y_); }
 
-   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix),naxis,&(this->x),&(this->y),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),clipmin,clipmax,use_mask, &Nm);
+   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),use_mask, &Nm);
    close_fits_file(filep);
 
    double minval;
    double maxval;
-   QImage *qim=createArrayImage(this->pix,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
+   QImage *qim=createArrayImage(this->pix_,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
    //scale to match canvas size
    QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
    delete qim;
    scene->clear();
    std::cout<<"Scene="<<scene->height()<<","<<scene->width()<<std::endl;
    std::cout<<"Image="<<qimc.height()<<","<<qimc.width()<<std::endl;
-   scene->addPixmap(QPixmap::fromImage(qimc));
+   QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
+   itm->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+   itm->setZValue(0.0);
+   itm->setToolTip(this->fileName());
    this->show();
 
    return 0;
@@ -229,7 +263,26 @@ int MyGraphicsView::readFITSFile(void)
 
 int MyGraphicsView::decompose(void)
 {
-  assert(this->pix);
+  if (this->fileName()==nullptr) {
+   QMessageBox msg;
+   msg.setText(tr("No input given. Open a FITS file first."));
+   msg.exec();
+   return 1;
+  }
+  int Nx,Ny;
+  int M=this->modes();
+  double beta=this->scale();
+  int n0=-1;
 
+  if (this->pix_) { free(this->pix_); }
+  if (this->x_) { free(this->x_); }
+  if (this->y_) { free(this->y_); }
+  if (this->av_) { free(this->av_); }
+  if (this->z_) { free(this->z_); }
+
+  decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
+
+  this->setScale(beta);
+  this->setModes(M);
   return 0;
 }

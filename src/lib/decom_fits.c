@@ -25,6 +25,8 @@
 #include <math.h>
 
 #include "shapelet.h"
+
+//#define DEBUG
 /*
  * the bulk of the work is done here;
  * filename: input FITS file
@@ -181,7 +183,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 
 #ifndef DEBUG
 	printf("Image dimension=%d by %d\n",*Nx,*Ny);
-	printf("Matrix dimension=%d by %d\n",*Nx*(*Ny),*n0*(*n0));
+	printf("Matrix dimension=%d by %d\n",(*Nx)*(*Ny),(*n0)*(*n0));
 	printf("scale=%lf, modes=%d <(%d)^2\n",*beta,*M,*n0);
 #endif
 
@@ -192,7 +194,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 	}
 #ifdef DEBUG
   for(i=0;i<*n0*(*n0); i++) {
-		printf("%d: %lf\n",i,*av[i]);
+		printf("%d: %lf\n",i,(*av)[i]);
 	}
 #endif
 
@@ -201,7 +203,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 #ifdef DEBUG
 	printf("solution\n");
   for(i=0;i<*n0*(*n0); i++) {
-		printf("%d: %lf\n",i,*av[i]);
+		printf("%d: %lf\n",i,(*av)[i]);
 	}
 #endif
 	/* reconstruct the image using the solution */
@@ -298,7 +300,6 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
   free(newfilename);
 	return 0;
 }
-
 
 /*
  * read FITS file and calculate mode vectors, do not do a decomposition

@@ -20,7 +20,7 @@
 
 #include "shapelet.h"
 
-#define DEBUG
+//#define DEBUG
 /* Execute the command using this shell program.  */
 #define SHELL "/bin/sh"
 #include <unistd.h>
