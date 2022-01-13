@@ -48,7 +48,6 @@ void ShapeletMain::on_actionOpen_FITS_triggered()
       msg.setText(tr("Cannot open FITS file"));
       msg.exec();
     } else {
-std::cout<<"Opening "<<fileName.toLocal8Bit().data()<<std::endl;
     ui->graphicsView->setFileName(fileName);
     ui->graphicsView->readFITSFile();
     }
@@ -61,23 +60,12 @@ void ShapeletMain::on_actionExit_triggered()
 
 void ShapeletMain::on_actionRun_single_triggered()
 {
-  //QGraphicsPixmapItem *item=new QGraphicsPixmapItem(QPixmap("/rec/modelFITS.png"));
-  //item->setScale(1.0);
-  //item->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
-  //ui->graphicsView->scene->addItem(item);
-  //item->setPos(100,100);
-  //ui->graphicsView->scene->setSceneRect(0,0,400,400);
-  //ui->graphicsView->scene->addRect(QRectF(0, 0, 100, 100));
-  //ui->graphicsView->show();
-
-  ui->graphicsView->decompose();
+   ui->graphicsView->decompose();
 }
 
 void ShapeletMain::on_actionRun_multifrequency_triggered()
 {
    ui->graphicsView->scene->clear();
-
-std::cout<<"Opening "<< ui->graphicsView->fileName().toLocal8Bit().data()<<std::endl;
 }
 
 void ShapeletMain::on_actionSettings_triggered()
@@ -122,6 +110,23 @@ void ShapeletMain::on_actionOpen_Directory_triggered()
 
 void ShapeletMain::on_actionAbout_triggered()
 {
-    TextDialog *abt=new TextDialog(this, QString("<b>ShapeletGUI</b>"));
+    TextDialog *abt=new TextDialog(this, QString(
+          "<h2><font color=\"blue\">shapeletGUI</font></h2><p><b>Fast Shapelet Transformer</b></p><p>Decomposes FITS images into Shapelets for use in SAGECal.</p><p><font color=\"blue\">shapeletGUI</font> comes with ABSOLUTELY NO WARRANTY. This is free software, and you are welcome to redistribute it under certain conditions given by GNU GENERAL PUBLIC LICENSE.</p><p>Copyright (C) 2006-2022 Sarod Yatawatta. Please report bugs/features at https://github.com/SarodYatawatta/shapeletGUI.</p>"
+          ));
     abt->exec();
+}
+
+void ShapeletMain::on_actionSave_triggered()
+{
+    QString saveFileName = QFileDialog::getSaveFileName(this, tr("Save File"),
+                               ".",
+                               tr("Shapelet modes (*.modes)"));
+    if (saveFileName==nullptr) {
+      QMessageBox msg;
+      msg.setText(tr("Cannot open file for saving"));
+      msg.exec();
+    } else {
+        ui->graphicsView->setSaveName(saveFileName);
+        ui->graphicsView->saveDecomp();
+    }
 }

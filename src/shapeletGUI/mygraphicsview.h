@@ -112,6 +112,8 @@ public:
 
  int decompose();
 
+ int saveDecomp();
+
  double clipmin() const;
  void setClipmin(double clipmin);
 
@@ -121,9 +123,13 @@ public:
  bool convolve_psf() const;
  void setConvolve_psf(bool convolve_psf);
 
+ QString saveName() const;
+ void setSaveName(const QString &save_name);
+
 protected:
  QRgb getRGB(double z, double maxval);
  QImage* createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array=false);
+ int saveDecomp_ascii(const char* filename, double beta, int n0, double *modes, position& cen);
 private:
 
  // variables for decomposition
@@ -145,6 +151,7 @@ private:
 
  QString file_name_;
  QString dir_name_;
+ QString save_name_;
 
  // variables for FITS IO
  position cen_;

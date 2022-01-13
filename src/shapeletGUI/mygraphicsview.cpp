@@ -190,6 +190,16 @@ QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *m
 
 }
 
+QString MyGraphicsView::saveName() const
+{
+    return save_name_;
+}
+
+void MyGraphicsView::setSaveName(const QString &save_name)
+{
+    save_name_ = save_name;
+}
+
 bool MyGraphicsView::convolve_psf() const
 {
     return convolve_psf_;
@@ -260,7 +270,6 @@ int MyGraphicsView::readFITSFile(void)
 }
 
 
-
 int MyGraphicsView::decompose(void)
 {
   if (this->fileName()==nullptr) {
@@ -284,5 +293,61 @@ int MyGraphicsView::decompose(void)
 
   this->setScale(beta);
   this->setModes(M);
+  this->n0_=n0;
+  return 0;
+}
+
+
+int MyGraphicsView::saveDecomp_ascii(const char* filename, double beta, int n0, double *modes, position& cen) {
+
+  setlocale(LC_NUMERIC,"POSIX"); /* dont print ',' instead of decimal '.' */
+  FILE *fp;
+  int i;
+  fp=fopen(filename,"w");
+
+  /* write to file */
+  /* first line RA (h,m,s) Dec (d,m,s) */
+  fprintf(fp,"%d %d %lf %d %d %lf\n",cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s);
+  /* first line: n0 beta scaled by 2pi*/
+  fprintf(fp,"%d %le\n",n0,beta*M_PI*2.0);
+  /* now each indiviaul mode, not ?? scaled by beta^2 */
+  for (i=0; i<n0*n0; i++)
+   fprintf(fp,"%d %le\n",i,modes[i]);
+  /* save LT parameters in parsable format */
+  fprintf(fp,"L %lf %lf %lf\n",this->xscale(),this->yscale(),(this->rotation()+90.0)*M_PI/180.0);
+  /* last lines additional info, save info on any linear transform used */
+  fprintf(fp,"#\n#\n");
+  fprintf(fp,"#a=%lf b=%lf theta=%lf p=%lf q=%lf\n",this->xscale(),this->yscale(),(this->rotation()+90.0)*M_PI/180.0,this->xoff(),this->yoff());
+  /* save filename, original beta */
+  fprintf(fp,"#file=%s beta=%lf ",filename,beta);
+  if (this->convolve_psf_) {
+   fprintf(fp," convolved with PSF\n");
+  } else {
+   fprintf(fp,"\n");
+  }
+  /* as help save full line to be included in sky model */
+  /*  name h m s d m s I Q U V spectral_index RM extent_X(rad) extent_Y(rad) pos_angle(rad) freq0 */
+  fprintf(fp,"# LSM format:\n");
+  fprintf(fp,"## %s %d %d %lf %d %d %lf 1 0 0 0 0 0 %lf %lf %lf 1000000.0\n",filename,cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s,this->xscale(),this->yscale(),(this->rotation())*M_PI/180.0);
+  fclose(fp);
+  return 0;
+}
+
+
+int MyGraphicsView::saveDecomp(void)
+{
+  // check to see if we have a valid result to save
+  if (this->av_==nullptr) {
+   QMessageBox msg;
+   msg.setText(tr("No valid shapelet decomposition to save. First open a FITS file and run decomposition."));
+   msg.exec();
+   return 1;
+  }
+  if (this->saveName().endsWith(".modes")) {
+   saveDecomp_ascii(this->saveName().toLocal8Bit().data(), this->scale(), this->n0_, this->av_, this->cen_);
+  } else {
+    QString fullname=this->saveName()+".modes";
+    saveDecomp_ascii(fullname.toLocal8Bit().data(), this->scale(), this->n0_, this->av_, this->cen_);
+  }
   return 0;
 }
