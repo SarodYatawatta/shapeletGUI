@@ -190,6 +190,35 @@ QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *m
 
 }
 
+QImage *MyGraphicsView::createDiffArrayImage(double *data1, double *data2, int Nx, int Ny, double *minval, double *maxval) {
+  // data= data1-data2
+  double *data=new double[Nx*Ny];
+  dcopy(Nx*Ny,data1,data);
+  daxpy(Nx*Ny,data2,-1.0,data);
+  int idmax=idamax(Nx*Ny,data,1)-1; /* 0.. */
+  *maxval=data[idmax];
+  // data=data2-data1
+  dcopy(Nx*Ny,data2,data);
+  daxpy(Nx*Ny,data1,-1.0,data);
+  int idmin=idamax(Nx*Ny,data,1)-1;
+  *minval=data[idmin];
+  if(*minval > *maxval) { double tmp=*maxval; *maxval=*minval; *minval=tmp; }
+  std::cout<<"Max "<<*maxval<< " Min "<<*minval<<std::endl;
+  //create Image
+  QImage *qim=new QImage(Nx,Ny,QImage::Format_RGB32);
+  qim->fill(qRgb(255,255,255));
+  //fill pixel values
+  for (int ii=0; ii<Nx; ii++) {
+    for (int jj=0; jj<Ny; jj++) {
+      qim->setPixel(ii,jj,getRGB(data[(Ny-1-jj)*Nx+ii]-*minval,*maxval-*minval));
+    }
+  }
+
+  delete[] data;
+  return qim;
+
+}
+
 QString MyGraphicsView::saveName() const
 {
     return save_name_;
@@ -294,6 +323,48 @@ int MyGraphicsView::decompose(void)
   this->setScale(beta);
   this->setModes(M);
   this->n0_=n0;
+
+  scene->clear();
+  double minval;
+  double maxval;
+  QImage *qim=createArrayImage(this->pix_,Nx,Ny,&minval,&maxval,true);
+  //scale to match canvas size
+  QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+  delete qim;
+  QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
+  itm->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+  itm->setZValue(0.0);
+  itm->setToolTip(this->fileName()+" min "+QString::number(minval)+" max "+QString::number(maxval));
+
+  QImage *qim_mod=createArrayImage(this->z_,Nx,Ny,&minval,&maxval,true);
+  //scale to match canvas size
+  QImage qimc_mod=qim_mod->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+  delete qim_mod;
+  QGraphicsPixmapItem *itm_mod=scene->addPixmap(QPixmap::fromImage(qimc_mod));
+  itm_mod->setPos(CANVAS_WIDTH, CANVAS_HEIGHT/2);
+  itm_mod->setZValue(0.0);
+  itm_mod->setToolTip(tr("Model min ")+QString::number(minval)+" max "+QString::number(maxval));
+
+  QImage *qim_coef=createArrayImage(this->av_,n0,n0,&minval,&maxval,true);
+  //scale to match canvas size
+  QImage qimc_coef=qim_coef->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::FastTransformation);
+  delete qim_coef;
+  QGraphicsPixmapItem *itm_coef=scene->addPixmap(QPixmap::fromImage(qimc_coef));
+  itm_coef->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT);
+  itm_coef->setZValue(0.0);
+  itm_coef->setToolTip(tr("Coefficients min ")+QString::number(minval)+" max "+QString::number(maxval));
+
+  QImage *qim_res=createDiffArrayImage(this->pix_,this->z_,Nx,Ny,&minval,&maxval);
+  //scale to match canvas size
+  QImage qimc_res=qim_res->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::FastTransformation);
+  delete qim_res;
+  QGraphicsPixmapItem *itm_res=scene->addPixmap(QPixmap::fromImage(qimc_res));
+  itm_res->setPos(CANVAS_WIDTH, CANVAS_HEIGHT);
+  itm_res->setZValue(0.0);
+  itm_res->setToolTip(tr("Residual min ")+QString::number(minval)+" max "+QString::number(maxval));
+
+
+  this->show();
   return 0;
 }
 

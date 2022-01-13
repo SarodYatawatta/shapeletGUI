@@ -129,6 +129,7 @@ public:
 protected:
  QRgb getRGB(double z, double maxval);
  QImage* createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array=false);
+ QImage* createDiffArrayImage(double *data1, double *data2, int Nx, int Ny, double *minval, double *maxval);
  int saveDecomp_ascii(const char* filename, double beta, int n0, double *modes, position& cen);
 private:
 
@@ -161,7 +162,7 @@ private:
  double *y_; // m grid values
  // array of solutions
  double *av_; // size n0*n0
- // reconstructed image
+ // reconstructed (model) image
  double *z_; // size equal to image
 };
 
