@@ -419,19 +419,23 @@ int get_min_max(long totalrows, long offset, long firstrow, long nrows,
 
 /* filename: file name
  * cutoff: cutoff to truncate the image, -1 to ignore this, 1.0 to read whole image
- * myarr: 4D data array of truncated image
- * new_naxis: array of dimensions of each axis
- * lgrid: grid points in l axis
- * mgrid: grid points in m axis
+ * myarr: 4D data array of truncated image (output)
+ * new_naxis: array of dimensions of each axis (output)
+ * lgrid: grid points in l axis (output)
+ * mgrid: grid points in m axis (output)
+ * fbuff: (output)
  * ignore_wcs: sometimes too small images screw up WCS, set 1 to use manual grid
-   cen : position (RA (h,m,s) Dec (h,m,s) 
+   cen : position (RA (h,m,s) Dec (h,m,s)  (output)
    xlow,xhigh,ylow,yhigh: if cutoff==-1, then will use these to read a sub image
- p,q: if not zero, will shift center to these pixels (p,q)
+   p,q: if not zero, will shift center to these pixels (p,q)
 * clipmin,clipmax: if not zero, clip values out this range before decomposition
-   use_mask: if 1, look for fitfile.MASK.fits and use it as a mask  NOTE: mask file is assumed to have same dimensions as the image fits file
-   nmaskpix: total pixels in the mask
- */
-int read_fits_file(const char *filename,double cutoff, double**myarr, long int *new_naxis, double **lgrid, double **mgrid, io_buff *fbuff, int ignore_wcs, position *cen, int xlow, int xhigh, int ylow, int yhigh,double p, double q, double clipmin, double clipmax, int use_mask, int *nmaskpix) {
+  use_mask: if 1, look for fitfile.MASK.fits and use it as a mask NOTE: mask file is assumed to have same dimensions as the image fits file
+  nmaskpix: total pixels in the mask (output)
+  bmaj,bmin,bpa: PSF (beam in radians) if the header includes the info (output)
+  deltax, deltay : pixel deltas in radians (output)
+  freq: (central) frequency in Hz (output)
+*/
+int read_fits_file(const char *filename,double cutoff, double**myarr, long int *new_naxis, double **lgrid, double **mgrid, io_buff *fbuff, int ignore_wcs, position *cen, int xlow, int xhigh, int ylow, int yhigh,double p, double q, double clipmin, double clipmax, int use_mask, int *nmaskpix, double *fits_bmaj, double *fits_bmin, double *fits_bpa, double *deltax, double *deltay, double *freq) {
     iteratorCol cols[3];  /* structure used by the iterator function */
     int n_cols;
     long rows_per_loop, offset;
@@ -541,6 +545,46 @@ int read_fits_file(const char *filename,double cutoff, double**myarr, long int *
 		//bscale=1.0; bzero=0.0;
     fits_set_bscale(fbuff->fptr,  bscale, bzero, &status);
 
+    /*****************************************************************/
+    *fits_bmaj=*fits_bmin=-1; /* assume no key present */
+    /* try to read psf params from file */
+    fits_read_key(fbuff->fptr,TDOUBLE,"BMAJ",fits_bmaj,0,&status);
+    /* recover error from missing key */
+    if (status) {
+     status=0;
+     *fits_bmaj=*fits_bmin=-1; /* no key present */
+    } else {
+     fits_read_key(fbuff->fptr,TDOUBLE,"BMIN",fits_bmin,0,&status);
+     if (status) {
+      status=0;
+      *fits_bmaj=*fits_bmin=-1; /* no key present */
+     } else {
+      fits_read_key(fbuff->fptr,TDOUBLE,"BPA",fits_bpa,0,&status);
+      if (status) {
+       status=0;
+       *fits_bmaj=*fits_bmin=-1; /* no key present */
+      } else {
+       printf("beam= (%lf,%lf,%lf)\n",*fits_bmaj,*fits_bmin,*fits_bpa);
+       *fits_bpa=(*fits_bpa)/180.0*M_PI;
+       *fits_bmaj=(*fits_bmaj)/360.0*M_PI;
+       *fits_bmin=(*fits_bmin)/360.0*M_PI;
+      }
+     }
+    }
+    /* also read pixel deltas */
+    *deltax=*deltay=1.0;
+    fits_read_key(fbuff->fptr,TDOUBLE,"CDELT1",deltax,0,&status);
+    if (status) {
+     status=0;
+    }
+    fits_read_key(fbuff->fptr,TDOUBLE,"CDELT2",deltay,0,&status);
+    if (status) {
+     status=0;
+    }
+    (*deltax)*=M_PI/180.0;
+    (*deltay)*=M_PI/180.0;
+    /*****************************************************************/
+
 
 		fits_get_img_dim(fbuff->fptr, &naxis, &status);
 #ifdef DEBUG
@@ -561,6 +605,69 @@ int read_fits_file(const char *filename,double cutoff, double**myarr, long int *
 			fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
 			return 1;
 		}
+
+    /*****************************************************************/
+    /* first get the freq coordinate */
+    fbuff->arr_dims.lpix[2]=fbuff->arr_dims.lpix[3]=1;
+    fbuff->arr_dims.hpix[2]=1; /* freq axes */
+    fbuff->arr_dims.hpix[3]=1;
+    /* use WCS to ger freq coordinate */
+    /* handle velocity values */
+    char ctypeS[9];
+    strcpy(ctypeS, "FREQ-???");
+    kk = -1;
+    if ((status = wcssptr(fbuff->wcs, &kk, ctypeS))) {
+          printf("wcssptr ERROR %d\n", status);
+    }
+
+    ncoord=1;
+    if ((pixelc=(double*)calloc((size_t)ncoord*4,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((imgc=(double*)calloc((size_t)ncoord*4,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((worldc=(double*)calloc((size_t)ncoord*4,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((phic=(double*)calloc((size_t)ncoord,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((thetac=(double*)calloc((size_t)ncoord,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((statc=(int*)calloc((size_t)ncoord,sizeof(int)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    kk=0;
+    pixelc[kk+0]=(double)1.0;
+    pixelc[kk+1]=(double)1.0;
+    pixelc[kk+2]=(double)1.0;
+    pixelc[kk+3]=(double)1.0;
+
+    if ((status = wcsp2s(fbuff->wcs, ncoord, fbuff->wcs->naxis, pixelc, imgc, phic, thetac,
+       worldc, statc))) {
+         fprintf(stderr,"wcsp2s ERROR %2d\n", status);
+         /* Handle Invalid pixel coordinates. */
+         if (status == 8) status = 0;
+    }
+    *freq=worldc[2];
+    if ((*freq)<=1.0) (*freq)=worldc[3];
+    printf("freq=%lf\n",(*freq));
+    free(pixelc);
+    free(imgc);
+    free(worldc);
+    free(phic);
+    free(thetac);
+    free(statc);
+    /*****************************************************************/
+
 		/* get axis dimensions */
 		fits_get_img_size(fbuff->fptr, naxis, fbuff->arr_dims.d, &status);
     /* reset zero length axes to 1 */
@@ -1142,7 +1249,10 @@ read_fits_file_recon(const char *filename,double**myarr, long int *new_naxis, do
 			printf("Type Double\n");
 #endif
 			datatype=TDOUBLE;
-		}
+		} else {
+			fprintf(stderr,"%s: %d: uknown bitpix\n",__FILE__,__LINE__);
+      datatype=TFLOAT;
+    }
 
 
     if (xlow || xhigh || ylow || yhigh) { /* use the given grid*/
@@ -1197,6 +1307,7 @@ read_fits_file_recon(const char *filename,double**myarr, long int *new_naxis, do
 		}
 
 
+		fbuff->arr_dims.datatype=datatype;
 		/* read the subset increment=[1,1,1,..]*/
 		fits_read_subset(fbuff->fptr, TDOUBLE, fbuff->arr_dims.lpix, fbuff->arr_dims.hpix, increment,
 									 0, *myarr, &null_flag, &status);

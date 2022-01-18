@@ -17,7 +17,7 @@ LIBPATH= -L/usr/lib $(WCSL) $(LMLIB) $(L1LIB)
 
 RANLIB=ranlib
 OBJECTS=hermite.o lapack.o shapelet_lm.o shapelet_uv.o \
-       decom_fits.o fits_utils.o fft.o
+       decom_fits.o fits_utils.o fft.o multi_fits.o
 default:libshapelet.a
 fits_utils.o:fits_utils.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -33,7 +33,14 @@ hermite.o:hermite.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 fft.o:fft.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+multi_fits.o:multi_fits.c shapelet.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 
 libshapelet.a:$(OBJECTS)
 	ar rv libshapelet.a $(OBJECTS); \
 	$(RANLIB) libshapelet.a;
+
+clean: $(OBJECTS) libshapelet.a
+	rm -rvf $(OBJECTS) libshapelet.a
+	rm -rvf *~ core *.core
+

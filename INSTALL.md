@@ -17,7 +17,7 @@ Get the source from [here](https://github.com/SarodYatawatta/shapeletGUI).
   * type "make libshapelet.a"
 
 ## Compile the GUI
- * change to src/gui
+ * change to src/shapeletGUI
  * edit shapeletGUI.pro file
  * change INCLUDEPATH and LIBS to include wcslib and cfitsio (same as step 2)
  * type "qmake"

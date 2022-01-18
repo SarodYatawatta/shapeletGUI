@@ -55,7 +55,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 	long int naxis[4]={0,0,0,0};
 	io_buff filep;
   double fits_bmaj,fits_bmin,fits_bpa;
-  int status=0;
+  double freq;
 
   double deltax,deltay,pixels_beam,tflux;
 
@@ -73,7 +73,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
   int Nm; /* MASK pixels, if any */
 
 	/* read fits file */
-	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q, clipmin, clipmax, use_mask, &Nm);
+	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q, clipmin, clipmax, use_mask, &Nm, &fits_bmaj, &fits_bmin, &fits_bpa, &deltax, &deltay, &freq);
 	*Nx=naxis[0]; *Ny=naxis[1];
 
 
@@ -94,46 +94,6 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 
   calculate_mode_vectors(*x, *Nx, *y, *Ny, M, beta, &Av, n0);
 
-  /* if needed, convolve the mode vectors with the PSF, 
-    recommended for large PSF
-  */
-  fits_bmaj=fits_bmin=-1; /* assume no key present */
-  /* try to read psf params from file */
-  fits_read_key(filep.fptr,TDOUBLE,"BMAJ",&fits_bmaj,0,&status);
-  /* recover error from missing key */
-  if (status) {
-     status=0;
-     fits_bmaj=fits_bmin=-1; /* no key present */
-  } else {
-     fits_read_key(filep.fptr,TDOUBLE,"BMIN",&fits_bmin,0,&status);
-     if (status) {
-      status=0;
-      fits_bmaj=fits_bmin=-1; /* no key present */
-     } else {
-      fits_read_key(filep.fptr,TDOUBLE,"BPA",&fits_bpa,0,&status);
-      if (status) {
-       status=0;
-       fits_bmaj=fits_bmin=-1; /* no key present */
-      } else {
-       printf("beam= (%lf,%lf,%lf)\n",fits_bmaj,fits_bmin,fits_bpa);
-       fits_bpa=(fits_bpa)/180.0*M_PI;
-       fits_bmaj=fits_bmaj/360.0*M_PI;
-       fits_bmin=fits_bmin/360.0*M_PI;
-      }
-     }
-  }
-  /* also read pixel deltas */
-  deltax=deltay=1.0;
-  fits_read_key(filep.fptr,TDOUBLE,"CDELT1",&deltax,0,&status);
-  if (status) {
-    status=0;
-  }
-  fits_read_key(filep.fptr,TDOUBLE,"CDELT2",&deltay,0,&status);
-  if (status) {
-    status=0;
-  }
-  deltax*=M_PI/180.0;
-  deltay*=M_PI/180.0;
   /* calculate foot print of psf (pi*a*b)/(deltax*deltay) no of pixels*/
   if (fits_bmaj!=-1 && fits_bmin!=-1) {
    pixels_beam=M_PI*(fits_bmaj)*(fits_bmin)/(deltax*deltay);
@@ -321,8 +281,8 @@ int calcmode_fits_file(char* filename, double cutoff, double **x, int *Nx, doubl
 
 	long int naxis[4]={0,0,0,0};
 	io_buff filep;
-  double fits_bmaj,fits_bmin,fits_bpa;
-  int status=0;
+  double fits_bmaj,fits_bmin,fits_bpa, deltax, deltay;
+  double freq;
 
   double *psf;
   int Npx,Npy;
@@ -330,7 +290,7 @@ int calcmode_fits_file(char* filename, double cutoff, double **x, int *Nx, doubl
 
 
 	/* read fits file */
-	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q,0.0, 0.0, 0, &Nm);
+	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q,0.0, 0.0, 0, &Nm, &fits_bmaj, &fits_bmin, &fits_bpa, &deltax, &deltay, &freq);
 	*Nx=naxis[0]; *Ny=naxis[1];
 
 
@@ -351,36 +311,11 @@ int calcmode_fits_file(char* filename, double cutoff, double **x, int *Nx, doubl
 
   calculate_mode_vectors(*x, *Nx, *y, *Ny, M, beta, Av, n0);
 
-  fits_bmaj=fits_bmin=-1; /* assume no key present */
   if (convolve_psf) {
    if (!psf_filename) {
-    /* try to read psf params from file */
-    fits_read_key(filep.fptr,TDOUBLE,"BMAJ",&fits_bmaj,0,&status);
-    /* recover error from missing key */
-    if (status) {
-     status=0;
-     fits_bmaj=fits_bmin=-1; /* no key present */
-    } else {
-     fits_read_key(filep.fptr,TDOUBLE,"BMIN",&fits_bmin,0,&status);
-     if (status) {
-      status=0;
-      fits_bmaj=fits_bmin=-1; /* no key present */
-     } else {
-      fits_read_key(filep.fptr,TDOUBLE,"BPA",&fits_bpa,0,&status);
-      if (status) {
-       status=0;
-       fits_bmaj=fits_bmin=-1; /* no key present */
-      } else { /* convert to radians */
-       fits_bpa=(fits_bpa)/180.0*M_PI;
-       printf("beam= (%lf,%lf,%lf)\n",fits_bmaj,fits_bmin,fits_bpa);
-       fits_bmaj=fits_bmaj/360.0*M_PI;
-       fits_bmin=fits_bmin/360.0*M_PI;
-     }
-    }
-   }
-   if (fits_bmaj!=-1 && fits_bmin!=-1) {
+    if (fits_bmaj!=-1 && fits_bmin!=-1) {
      convolve_with_psf(*x,*Nx,*y,*Ny,*Av,*n0,fits_bmaj,fits_bmin,fits_bpa);
-   }
+    }
    } else { /* read PSF from psf_filename */
      printf("using PSF FITS file= (%s)\n",psf_filename);
      read_fits_file_psf(psf_filename,&psf, &Npx, &Npy);
@@ -436,8 +371,8 @@ decompose_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, doubl
 	int i;
   char *newfilename=0;
   double *res;
-  double fits_bmaj,fits_bmin,fits_bpa;
-  int status=0;
+  double fits_bmaj,fits_bmin,fits_bpa,deltax,deltay;
+  double freq;
 
 #ifdef DEBUG
 	FILE *dbg;
@@ -449,7 +384,7 @@ decompose_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, doubl
 
 
 	/* read fits file */
-	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q,clipmin, clipmax, use_mask, &Nm);
+	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q,clipmin, clipmax, use_mask, &Nm,  &fits_bmaj, &fits_bmin, &fits_bpa, &deltax, &deltay, &freq);
 	*Nx=naxis[0]; *Ny=naxis[1];
 
 
@@ -476,34 +411,9 @@ decompose_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, doubl
 
   calculate_mode_vectors_tf(*x, *Nx, *y, *Ny, a0, b0, theta, n0, beta, &Av);
 
-  fits_bmaj=fits_bmin=-1; /* assume no key present */
   if (convolve_psf) {
    if (!psf_filename) {
-    /* try to read psf params from file */
-    fits_read_key(filep.fptr,TDOUBLE,"BMAJ",&fits_bmaj,0,&status);
-    /* recover error from missing key */
-    if (status) {
-     status=0;
-     fits_bmaj=fits_bmin=-1; /* no key present */
-    } else {
-     fits_read_key(filep.fptr,TDOUBLE,"BMIN",&fits_bmin,0,&status);
-     if (status) {
-      status=0;
-      fits_bmaj=fits_bmin=-1; /* no key present */
-     } else {
-      fits_read_key(filep.fptr,TDOUBLE,"BPA",&fits_bpa,0,&status);
-      if (status) {
-       status=0;
-       fits_bmaj=fits_bmin=-1; /* no key present */
-      } else { /* convert to radians */
-       fits_bpa=(fits_bpa)/180.0*M_PI;
-       printf("beam= (%lf,%lf,%lf)\n",fits_bmaj,fits_bmin,fits_bpa);
-       fits_bmaj=fits_bmaj/360.0*M_PI;
-       fits_bmin=fits_bmin/360.0*M_PI;
-     }
-    }
-   }
-   if (fits_bmaj!=-1 && fits_bmin!=-1) {
+    if (fits_bmaj!=-1 && fits_bmin!=-1) {
      convolve_with_psf(*x,*Nx,*y,*Ny,Av,*n0,fits_bmaj,fits_bmin,fits_bpa);
     }
    } else { /* read PSF from psf_filename */
@@ -655,7 +565,7 @@ calcmode_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, double
 	long int naxis[4]={0,0,0,0};
 	io_buff filep;
 
-  double fits_bmaj,fits_bmin,fits_bpa;
+  double fits_bmaj,fits_bmin,fits_bpa,deltax,deltay,freq;
   int status=0;
 
   double *psf;
@@ -664,7 +574,7 @@ calcmode_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, double
 
 
 	/* read fits file */
-	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q,0.0,0.0,0, &Nm);
+	read_fits_file(filename,cutoff,b,naxis,x, y, &filep,0, cen,0,0,0,0,p,q, 0.0, 0.0, 0, &Nm, &fits_bmaj, &fits_bmin, &fits_bpa, &deltax, &deltay, &freq);
 	*Nx=naxis[0]; *Ny=naxis[1];
 
 

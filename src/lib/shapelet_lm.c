@@ -292,6 +292,7 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
     /* fill in Nx*Ny*(zci) to Nx*Ny*(zci+1)-1 */
 		start=Nx*Ny*(n2*(*n0)+n1);
 	  for (yci=0; yci<Ny; yci++) {
+#pragma GCC ivdep
 	   for (xci=0; xci<Nx; xci++) {
         //(*Av)[start+Ny*xci+yci]=-1;
         (*Av)[start+Nx*yci+xci]=shpvl[xindex[xci]][n1]*shpvl[yindex[yci]][n2];
@@ -545,8 +546,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 				 shpvl[zci][xci]=(xci%2==1?-shpvl[neg_grid[zci]][xci]:shpvl[neg_grid[zci]][xci]);
 			 }
 		 } else {
-/* parallelize for loop use -fopenmp */
-#pragma omp parallel for
 	     for (xci=0; xci<(n0); xci++) {
 				/*take into account the scaling
 				*/
@@ -575,12 +574,11 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	  fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
 	  exit(1);
 	}
-#pragma omp parallel for
 	for (n2=0; n2<(n0); n2++) {
 	 for (n1=0; n1<(n0); n1++) {
     /* fill in N*(zci) to N*(zci+1)-1 */
 		start=N*(n2*(n0)+n1);
-#pragma omp parallel for
+#pragma GCC ivdep
 	  for (xci=0; xci<N; xci++) {
       (*Av)[start+xci]=shpvl[xindex[xci]][n1]*shpvl[yindex[xci]][n2];
 		}

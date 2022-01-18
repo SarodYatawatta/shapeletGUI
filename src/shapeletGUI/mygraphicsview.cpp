@@ -273,11 +273,10 @@ int MyGraphicsView::readFITSFile(void)
    int ylow=0;
    int yhigh=0;
  
-   if (this->pix_) { free(this->pix_); }
-   if (this->x_) { free(this->x_); }
-   if (this->y_) { free(this->y_); }
+   double beam_maj, beam_min, beam_pa, freq, deltax, deltay;
 
-   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),use_mask, &Nm);
+   clearMemory();
+   read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),use_mask, &Nm, &beam_maj, &beam_min, &beam_pa, &deltax, &deltay, &freq);
    close_fits_file(filep);
 
    double minval;
@@ -312,11 +311,7 @@ int MyGraphicsView::decompose(void)
   double beta=this->scale();
   int n0=-1;
 
-  if (this->pix_) { free(this->pix_); }
-  if (this->x_) { free(this->x_); }
-  if (this->y_) { free(this->y_); }
-  if (this->av_) { free(this->av_); }
-  if (this->z_) { free(this->z_); }
+  clearMemory();
 
   decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
 
@@ -421,4 +416,30 @@ int MyGraphicsView::saveDecomp(void)
     saveDecomp_ascii(fullname.toLocal8Bit().data(), this->scale(), this->n0_, this->av_, this->cen_);
   }
   return 0;
+}
+
+
+int MyGraphicsView::readFITSDir(void)
+{
+    
+    long int naxis[4]={0,0,0,0};
+    io_buff filep;
+    int ignore_wcs=0;
+   int xlow=0;
+   int xhigh=0;
+   int ylow=0;
+   int yhigh=0;
+ 
+   int Nf;
+   double *freqs, *beam_bmaj, *beam_bmin, *beam_bpa;
+
+   clearMemory();
+   read_fits_dir(this->dirName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&Nf,&freqs, &beam_bmaj, &beam_bmin, &beam_bpa);
+
+   free(freqs);
+   free(beam_bmaj);
+   free(beam_bmin);
+   free(beam_bpa);
+
+   return 0;
 }

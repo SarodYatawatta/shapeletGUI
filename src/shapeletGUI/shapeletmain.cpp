@@ -105,6 +105,7 @@ void ShapeletMain::on_actionOpen_Directory_triggered()
       msg.exec();
     } else {
         ui->graphicsView->setDirName(dirName);
+        ui->graphicsView->readFITSDir();
     }
 }
 

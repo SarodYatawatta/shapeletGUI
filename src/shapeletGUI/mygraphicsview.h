@@ -71,6 +71,15 @@ public:
    if (this->av_) { free(this->av_); }
    if (this->z_) { free(this->z_); }
  }
+ void clearMemory(void) {
+  if (this->pix_) { free(this->pix_); this->pix_=nullptr; }
+  if (this->x_) { free(this->x_); this->x_=nullptr; }
+  if (this->y_) { free(this->y_); this->y_=nullptr;  }
+  if (this->av_) { free(this->av_); this->av_=nullptr; }
+  if (this->z_) { free(this->z_); this->z_=nullptr; }
+ }
+
+ QGraphicsScene *scene;
 
  int modes() const;
  void setModes(int modes);
@@ -93,26 +102,20 @@ public:
  bool tf() const;
  void setTf(bool tf);
 
-
  QString fileName() const;
  void setFileName(QString file_name);
 
  QString dirName() const;
  void setDirName(QString dir_name);
 
+ QString saveName() const;
+ void setSaveName(const QString &save_name);
+
  double xoff() const;
  void setXoff(double xoff);
 
  double yoff() const;
  void setYoff(double yoff);
-
- QGraphicsScene *scene;
-
- int readFITSFile();
-
- int decompose();
-
- int saveDecomp();
 
  double clipmin() const;
  void setClipmin(double clipmin);
@@ -123,8 +126,13 @@ public:
  bool convolve_psf() const;
  void setConvolve_psf(bool convolve_psf);
 
- QString saveName() const;
- void setSaveName(const QString &save_name);
+ int readFITSFile();
+
+ int readFITSDir();
+
+ int decompose();
+
+ int saveDecomp();
 
 protected:
  QRgb getRGB(double z, double maxval);
