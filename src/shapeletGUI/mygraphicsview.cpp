@@ -276,6 +276,7 @@ int MyGraphicsView::readFITSFile(void)
    double beam_maj, beam_min, beam_pa, freq, deltax, deltay;
 
    clearMemory();
+   scene->clear();
    read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),use_mask, &Nm, &beam_maj, &beam_min, &beam_pa, &deltax, &deltay, &freq);
    close_fits_file(filep);
 
@@ -285,7 +286,6 @@ int MyGraphicsView::readFITSFile(void)
    //scale to match canvas size
    QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
    delete qim;
-   scene->clear();
    std::cout<<"Scene="<<scene->height()<<","<<scene->width()<<std::endl;
    std::cout<<"Image="<<qimc.height()<<","<<qimc.width()<<std::endl;
    QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
@@ -312,14 +312,13 @@ int MyGraphicsView::decompose(void)
   int n0=-1;
 
   clearMemory();
-
+  scene->clear();
   decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
 
   this->setScale(beta);
   this->setModes(M);
   this->n0_=n0;
 
-  scene->clear();
   double minval;
   double maxval;
   QImage *qim=createArrayImage(this->pix_,Nx,Ny,&minval,&maxval,true);
@@ -399,11 +398,21 @@ int MyGraphicsView::saveDecomp_ascii(const char* filename, double beta, int n0, 
   return 0;
 }
 
+int MyGraphicsView::getNf() const
+{
+    return Nf_;
+}
+
+void MyGraphicsView::setNf(int Nf)
+{
+    Nf_ = Nf;
+}
+
 
 int MyGraphicsView::saveDecomp(void)
 {
-  // check to see if we have a valid result to save
-  if (this->av_==nullptr) {
+    // check to see if we have a valid result to save
+    if (this->av_==nullptr) {
    QMessageBox msg;
    msg.setText(tr("No valid shapelet decomposition to save. First open a FITS file and run decomposition."));
    msg.exec();
@@ -422,24 +431,17 @@ int MyGraphicsView::saveDecomp(void)
 int MyGraphicsView::readFITSDir(void)
 {
     
-    long int naxis[4]={0,0,0,0};
-    io_buff filep;
-    int ignore_wcs=0;
+   long int naxis[4]={0,0,0,0};
+   io_buff filep;
+   int ignore_wcs=0;
    int xlow=0;
    int xhigh=0;
    int ylow=0;
    int yhigh=0;
  
-   int Nf;
-   double *freqs, *beam_bmaj, *beam_bmin, *beam_bpa;
-
    clearMemory();
-   read_fits_dir(this->dirName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&Nf,&freqs, &beam_bmaj, &beam_bmin, &beam_bpa);
-
-   free(freqs);
-   free(beam_bmaj);
-   free(beam_bmin);
-   free(beam_bpa);
+   scene->clear();
+   read_fits_dir(this->dirName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->Nf_),&(this->freqs_), &(this->bmaj_), &(this->bmin_), &(this->bpa_));
 
    return 0;
 }

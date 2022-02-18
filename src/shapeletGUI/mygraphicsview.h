@@ -60,6 +60,10 @@ public:
    this->pix_=nullptr;
    this->x_=nullptr;
    this->y_=nullptr;
+   this->freqs_=nullptr;
+   this->bmaj_=nullptr;
+   this->bmin_=nullptr;
+   this->bpa_=nullptr;
    this->av_=nullptr;
    this->z_=nullptr;
  }
@@ -68,6 +72,10 @@ public:
    if (this->pix_) { free(this->pix_); }
    if (this->x_) { free(this->x_); }
    if (this->y_) { free(this->y_); }
+   if (this->freqs_) { free(this->freqs_); }
+   if (this->bmaj_) { free(this->bmaj_); }
+   if (this->bmin_) { free(this->bmin_); }
+   if (this->bpa_) { free(this->bpa_); }
    if (this->av_) { free(this->av_); }
    if (this->z_) { free(this->z_); }
  }
@@ -75,6 +83,10 @@ public:
   if (this->pix_) { free(this->pix_); this->pix_=nullptr; }
   if (this->x_) { free(this->x_); this->x_=nullptr; }
   if (this->y_) { free(this->y_); this->y_=nullptr;  }
+  if (this->freqs_) { free(this->freqs_); this->freqs_=nullptr; }
+  if (this->bmaj_) { free(this->bmaj_); this->bmaj_=nullptr; }
+  if (this->bmin_) { free(this->bmin_); this->bmin_=nullptr; }
+  if (this->bpa_) { free(this->bpa_); this->bpa_=nullptr; }
   if (this->av_) { free(this->av_); this->av_=nullptr; }
   if (this->z_) { free(this->z_); this->z_=nullptr; }
  }
@@ -126,6 +138,9 @@ public:
  bool convolve_psf() const;
  void setConvolve_psf(bool convolve_psf);
 
+ int getNf() const;
+ void setNf(int Nf);
+
  int readFITSFile();
 
  int readFITSDir();
@@ -165,9 +180,15 @@ private:
  // variables for FITS IO
  position cen_;
  // storage (will be allocated while reading file)
- double *pix_; // pixel values
+ double *pix_; // pixel values, for single and multiple FITS Nfxpixels
  double *x_; // l grid values
  double *y_; // m grid values
+ // following for multiple FITS files
+ int Nf_; // number of frequencies
+ double *freqs_; //frequency grid Nfx1
+ double *bmaj_; // PSF bmaj Nfx1
+ double *bmin_; // bmin Nfx1
+ double *bpa_; // bpa Nfx1
  // array of solutions
  double *av_; // size n0*n0
  // reconstructed (model) image

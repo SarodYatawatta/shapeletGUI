@@ -865,7 +865,7 @@ int read_fits_file(const char *filename,double cutoff, double**myarr, long int *
     printf("found axis %d using %d\n",fbuff->wcs->naxis,naxis);
 #endif
 		/* allocate memory for pixel/world coordinate arrays */
-		ncoord=totalpix; /* consider only one plane fron freq, and stokes axes because RA,Dec will not change */
+		ncoord=totalpix; /* consider only one plane from freq, and stokes axes because RA,Dec will not change */
   	if ((pixelc=(double*)calloc((size_t)ncoord*4,sizeof(double)))==0) {
 			fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
 			return 1;

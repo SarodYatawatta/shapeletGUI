@@ -65,10 +65,10 @@ int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *n
 
  /* for handling files in directory */
  char *fullname=0;
- struct dirent **eps;
+ struct dirent **namelist;
 
  /* scan given directory */
- *Nf=scandir(fitsdir, &eps, select_file, alphasort);
+ *Nf=scandir(fitsdir, &namelist, select_file, alphasort);
  if (*Nf<=0) {
      fprintf(stderr,"%s: %d: invalid directory\n",__FILE__,__LINE__);
      return 1;
@@ -76,44 +76,63 @@ int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *n
  /* allocate memory for freqs and PSF */
  if ((*freqs=(double*)calloc((size_t)(*Nf),sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
   if ((*bmaj=(double*)calloc((size_t)*Nf,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
  if ((*bmin=(double*)calloc((size_t)*Nf,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
  if ((*bpa=(double*)calloc((size_t)*Nf,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
  if ((deltax=(double*)calloc((size_t)*Nf,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
  if ((deltay=(double*)calloc((size_t)*Nf,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      return 1;
+      exit(1);
  }
 
+ int totalpix=0;
  /* iterate over FITS files */
  int Nm=0;
  /**************************************************************/
  for (int cnt=0; cnt< *Nf; ++cnt) {
        /* create full path */
-       if ((fullname=(char*)calloc((size_t)(strlen(fitsdir)+strlen(eps[cnt]->d_name)+2),sizeof(char)))==0) {
+       if ((fullname=(char*)calloc((size_t)(strlen(fitsdir)+strlen(namelist[cnt]->d_name)+2),sizeof(char)))==0) {
          fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-         return 1;
+         exit(1);
        }
        strcpy(fullname,fitsdir);
        /* append extra '/' to catch errors */
        strcat(fullname,"/");
-       strcat(fullname,eps[cnt]->d_name);
+       strcat(fullname,namelist[cnt]->d_name);
        printf("processing file %s\n",fullname);
+       /* xlow=xhigh=ylow=yhigh=0 here */
        read_fits_file(fullname,cutoff, &pixval,naxis, &x, &y, &fbuff0,0, cen,0,0,0,0,p,q, clipmin, clipmax, 0, &Nm, &(*bmaj)[cnt], &(*bmin)[cnt], &(*bpa)[cnt], &deltax[cnt], &deltay[cnt], &(*freqs)[cnt]);
+       free(fullname);
+      if (!cnt) { /* allocate memory for all files, using first file size */
+        totalpix=naxis[0]*naxis[1];
+        if ((*myarr=(double*)calloc((size_t)totalpix*(*Nf),sizeof(double)))==0) {
+         fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+         exit(1);
+       }
+      } else {
+        /* check all other files have same size */
+        if (totalpix!=naxis[0]*naxis[1]){
+         fprintf(stderr,"%s: %d: FITS files do not match in size\n",__FILE__,__LINE__);
+         exit(1);
+        }
+      }
+      /* copy to common buffer */
+      memcpy(&(*myarr)[cnt*totalpix],pixval,sizeof(double)*totalpix);
+
        free(x);
        free(y);
        free(pixval);
@@ -123,6 +142,10 @@ int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *n
 
 
 
+ for (int cnt=0; cnt< *Nf; ++cnt) {
+   free(namelist[cnt]);
+ }
+ free(namelist);
  free(deltax);
  free(deltay);
  return 0;
