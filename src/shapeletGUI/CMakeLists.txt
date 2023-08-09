@@ -32,6 +32,9 @@ target_link_libraries(shapeletGUI PRIVATE
   -lpthread
   -lm
   )
+qt_add_resources(TARGET shapeletGUI SOURCES resources.qrc)
 set_property(TARGET shapeletGUI PROPERTY AUTOMOC ON)
+set_property(TARGET shapeletGUI PROPERTY AUTORCC ON)
+set_property(TARGET shapeletGUI PROPERTY AUTOUIC ON)
 install(TARGETS shapeletGUI DESTINATION bin)
 
