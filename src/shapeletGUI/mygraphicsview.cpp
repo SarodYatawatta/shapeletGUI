@@ -259,19 +259,28 @@ void MyGraphicsView::setClipmin(double clipmin)
     clipmin_ = clipmin;
 }
 
+int MyGraphicsView::getNf() const
+{
+    return Nf_;
+}
+
+void MyGraphicsView::setNf(int Nf)
+{
+    Nf_ = Nf;
+}
 
 int MyGraphicsView::readFITSFile(void)
 {
     
-    long int naxis[4]={0,0,0,0};
-    io_buff filep;
-    int ignore_wcs=0;
-   int use_mask=0;
+   long int naxis[4]={0,0,0,0};
+   io_buff filep;
+   const int ignore_wcs=0;
+   const int use_mask=0;
    int Nm=0;
-   int xlow=0;
-   int xhigh=0;
-   int ylow=0;
-   int yhigh=0;
+   const int xlow=0;
+   const int xhigh=0;
+   const int ylow=0;
+   const int yhigh=0;
  
    double beam_maj, beam_min, beam_pa, freq, deltax, deltay;
 
@@ -398,21 +407,11 @@ int MyGraphicsView::saveDecomp_ascii(const char* filename, double beta, int n0, 
   return 0;
 }
 
-int MyGraphicsView::getNf() const
-{
-    return Nf_;
-}
-
-void MyGraphicsView::setNf(int Nf)
-{
-    Nf_ = Nf;
-}
-
 
 int MyGraphicsView::saveDecomp(void)
 {
-    // check to see if we have a valid result to save
-    if (this->av_==nullptr) {
+  // check to see if we have a valid result to save
+  if (this->av_==nullptr) {
    QMessageBox msg;
    msg.setText(tr("No valid shapelet decomposition to save. First open a FITS file and run decomposition."));
    msg.exec();
@@ -433,15 +432,76 @@ int MyGraphicsView::readFITSDir(void)
     
    long int naxis[4]={0,0,0,0};
    io_buff filep;
-   int ignore_wcs=0;
-   int xlow=0;
-   int xhigh=0;
-   int ylow=0;
-   int yhigh=0;
+   const int ignore_wcs=0;
+   const int xlow=0;
+   const int xhigh=0;
+   const int ylow=0;
+   const int yhigh=0;
  
    clearMemory();
    scene->clear();
    read_fits_dir(this->dirName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->Nf_),&(this->freqs_), &(this->bmaj_), &(this->bmin_), &(this->bpa_));
 
+   std::cout<<" image="<<naxis[0]<<"x"<<naxis[1]<<"x"<<this->Nf_<<std::endl;
+   const int totalpix=naxis[0]*naxis[1];
+   // Find average image
+   double *avgimage=new double[totalpix];
+   dcopy(totalpix,this->pix_,avgimage);
+   for (int cf=0; cf<this->Nf_; cf++) {
+     daxpy(totalpix,&(this->pix_[cf*totalpix]),1.0,avgimage);
+   }
+   dscal(totalpix,1.0/(double)this->Nf_,avgimage);
+   double minval;
+   double maxval;
+   QImage *qim=createArrayImage(avgimage,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
+   //scale to match canvas size
+   QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+   delete qim;
+   QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
+   itm->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+   itm->setZValue(0.0);
+   itm->setToolTip(this->dirName()+" Average: min "+QString::number(minval)+" max "+QString::number(maxval));
+   // Find diff image (first freq - last freq)
+   dcopy(totalpix,this->pix_,avgimage);
+   daxpy(totalpix,&(this->pix_[(this->Nf_-1)*totalpix]),-1.0,avgimage); //last plane
+   QImage *qim1=createArrayImage(avgimage,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
+   //scale to match canvas size
+   QImage qimc1=qim1->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+   delete qim1;
+   QGraphicsPixmapItem *itm1=scene->addPixmap(QPixmap::fromImage(qimc1));
+   itm1->setPos(CANVAS_WIDTH, CANVAS_HEIGHT/2);
+   itm1->setZValue(0.0);
+   itm1->setToolTip(this->dirName()+" Difference: min "+QString::number(minval)+" max "+QString::number(maxval));
+
+   delete []avgimage;
+
+   this->show();
    return 0;
+}
+
+
+int MyGraphicsView::decompose_dir(void)
+{
+  if (this->dirName()==nullptr) {
+   QMessageBox msg;
+   msg.setText(tr("No input directory given. Open a directory with FITS files first."));
+   msg.exec();
+   return 1;
+  }
+
+  clearMemory();
+  scene->clear();
+
+  int Nx,Ny;
+  int M=this->modes();
+  double beta=this->scale();
+  int n0=-1;
+
+  double *freqs=nullptr;
+  int Nf;
+
+  decompose_fits_dir(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&Nf,&freqs,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
+
+  this->show();
+  return 0;
 }
