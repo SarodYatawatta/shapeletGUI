@@ -1,4 +1,4 @@
-do 13 jan 2022 13:34:00 CET
+wo  9 aug 2023 12:32:11 CEST
 # ShapeletGUI Installation
 
 ## Pre-requisites:
@@ -8,7 +8,16 @@ In Ubuntu 20.04: libcfitsio-dev, wcslib-dev, libopenblas-dev, libfftw3-dev and Q
 ## Download and unpack the source:
 Get the source from [here](https://github.com/SarodYatawatta/shapeletGUI).
 
-## Compile the library
+## Compile the binary (cmake)
+Using cmake it is simple as the following:
+
+```
+ mkdir build && cd build
+ cmake ..
+ make
+```
+
+## Compile the library (without cmake)
   * change to src/lib 
   * edit Makefile
   *  change WCSI to point to wcslib include files (wcs.h)
@@ -16,7 +25,7 @@ Get the source from [here](https://github.com/SarodYatawatta/shapeletGUI).
   * also change INCLUDES and LIBPATH to find cfitsio headers (fitsio2.h) and lib (libcfitsio.so)
   * type "make libshapelet.a"
 
-## Compile the GUI
+## Compile the GUI (without cmake)
  * change to src/shapeletGUI
  * edit shapeletGUI.pro file
  * change INCLUDEPATH and LIBS to include wcslib and cfitsio (same as step 2)
