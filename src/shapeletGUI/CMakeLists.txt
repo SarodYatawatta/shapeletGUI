@@ -5,6 +5,7 @@ include_directories(${WCSLIB_INCLUDE_DIRS})
 include_directories(${Qt6Widgets_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+link_directories(${LIBRARY_OUTPUT_PATH})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 
@@ -37,4 +38,3 @@ set_property(TARGET shapeletGUI PROPERTY AUTOMOC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTORCC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTOUIC ON)
 install(TARGETS shapeletGUI DESTINATION bin)
-
