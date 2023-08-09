@@ -456,10 +456,50 @@ convolve_with_psf_fits(double *x, int Nx, double *y, int Ny,
                   double *Av, int n0, double *psf, int Npx, int Npy);
 
 /**************************************************************
- multi_fitd.c 
+ multi_fits.c 
 **************************************************************/
+/* read multiple FITS files in the directory (select suitable files)
+ * fitsdir: directory of image files
+ * cutoff: cutoff to truncate the image, -1 to ignore this, 1.0 to read whole image
+ * myarr: 4D data array of truncated image
+ * new_naxis: array of dimensions of each axis
+ * lgrid: grid points in l axis
+ * mgrid: grid points in m axis
+ * ignore_wcs: sometimes too small images screw up WCS, set 1 to use manual grid
+ *  cen : position (RA (h,m,s) Dec (h,m,s)
+ *  xlow,xhigh,ylow,yhigh: if cutoff==-1, then will use these to read a sub image
+ p,q: if not zero, will shift center to these pixels (p,q)
+* clipmin,clipmax: if not zero, clip values out this range before decomposition
+* Nf : total frequencies (= suitable FITS files)
+* freqs: array of frequencies Nfx1
+* bmaj,bmin,bpa: PSF info Nfx1
+*/
 extern int 
 read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *new_naxis, double **lgrid, double **mgrid, io_buff *fbuff, int ignore_wcs, position *cen, int xlow, int xhigh, int ylow, int yhigh,double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **bmaj, double **bmin, double **bpa);
+
+/*
+ * similar to decompose_fits(), instead of one FITS file, a directory
+ * fitsdir: directory
+ * cutoff: cutoff [0,1)
+ * x,Nx: Nx by 1 grid of x axis
+ * y,Ny: Ny by 1 grid of y axis
+ * beta: scale
+ * M: no of modes
+ * n0: actual no of modes in each axis
+ * p,q: shift center to this pixel vales (starting from 1), if zero, ignored
+ * clipmin,clipmax: if not zero, clip values out this range before decomposition
+ * b: image pixel values
+ * av: decomposed coefficient array
+ * z: reconstructed pixel values
+   cen: position (RA,Dec) h,m,s, d, m ,s
+   convolve_psf: if >0, will attempt to get the PSF from the FITS file and convolve modes with it before decomposition
+  psf_filename: if not 0, will try to read the PSF from this FITS file
+
+  use_mask: if 1, look for fitfile.MASK.fits and use it as a mask NOTE: mask file is assumed to have same dimensions as the image fits file
+ */
+extern int 
+decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, double **y, int *Ny, double *beta, int *M, int *n0, double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **b, double **av, double **z, position *cen, int convolve_psf, char *psf_filename, int use_mask);
+
 #ifdef __cplusplus
      } /* extern "C" */
 #endif

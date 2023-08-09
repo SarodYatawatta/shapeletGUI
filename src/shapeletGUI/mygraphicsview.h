@@ -146,6 +146,7 @@ public:
  int readFITSDir();
 
  int decompose();
+ int decompose_dir();
 
  int saveDecomp();
 

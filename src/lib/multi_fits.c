@@ -52,9 +52,9 @@ select_file(const struct dirent *dent)
  p,q: if not zero, will shift center to these pixels (p,q)
 * clipmin,clipmax: if not zero, clip values out this range before decomposition
 * Nf : total frequencies (= suitable FITS files)
-* freqs: array of frequencies
+* freqs: array of frequencies Nfx1
+* bmaj,bmin,bpa: PSF info Nfx1
 */
-
 int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *new_naxis, double **lgrid, double **mgrid, io_buff *fbuff, int ignore_wcs, position *cen, int xlow, int xhigh, int ylow, int yhigh,double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **bmaj, double **bmin, double **bpa) {
 
   long int naxis[4]={0,0,0,0};
@@ -133,14 +133,17 @@ int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *n
       /* copy to common buffer */
       memcpy(&(*myarr)[cnt*totalpix],pixval,sizeof(double)*totalpix);
 
-       free(x);
-       free(y);
-       free(pixval);
-       close_fits_file(fbuff0);
+      free(x);
+      free(y);
+      free(pixval);
+      close_fits_file(fbuff0);
  }
+ /* copy axis parameters */
+ new_naxis[0]=naxis[0];
+ new_naxis[1]=naxis[1];
+ new_naxis[2]=naxis[2];
+ new_naxis[3]=naxis[3];
  /**************************************************************/
-
-
 
  for (int cnt=0; cnt< *Nf; ++cnt) {
    free(namelist[cnt]);
@@ -149,4 +152,12 @@ int read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *n
  free(deltax);
  free(deltay);
  return 0;
+}
+
+
+int decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, double **y, int *Ny, double *beta, int *M, int *n0, double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **b, double **av, double **z, position *cen, int convolve_psf, char *psf_filename, int use_mask) {
+
+
+
+  return 0;
 }

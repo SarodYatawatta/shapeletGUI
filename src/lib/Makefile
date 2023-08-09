@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CFLAGS= -O3 -Wall -g -DSTANDALONE_FITS
+CFLAGS= -O3 -Wall -g
 CLIBS= -lm -lcfitsio -lfftw3_threads -lfftw3
 WCSI= -I/usr/include/wcslib
 WCSL= -L/usr/lib

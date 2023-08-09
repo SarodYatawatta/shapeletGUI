@@ -65,7 +65,7 @@ void ShapeletMain::on_actionRun_single_triggered()
 
 void ShapeletMain::on_actionRun_multifrequency_triggered()
 {
-   ui->graphicsView->scene->clear();
+   ui->graphicsView->decompose_dir();
 }
 
 void ShapeletMain::on_actionSettings_triggered()
