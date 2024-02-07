@@ -5,8 +5,11 @@ include_directories(${WCSLIB_INCLUDE_DIRS})
 include_directories(${Qt6Widgets_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+link_directories(${LIBRARY_OUTPUT_PATH})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR})
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+
+target_link_libraries(${target} shapelet)
 
 qt_add_executable(shapeletGUI
     optionsdialog.ui

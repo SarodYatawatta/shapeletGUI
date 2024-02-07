@@ -11,6 +11,7 @@ set (objects
   hermite.c
   multi_fits.c
   shapelet_uv.c
+  apc.c
 )
 message (STATUS "lib objects --> ${objects}")
 

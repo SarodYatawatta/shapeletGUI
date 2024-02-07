@@ -289,6 +289,9 @@ int MyGraphicsView::readFITSFile(void)
    read_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->pix_),naxis,&(this->x_),&(this->y_),&filep,ignore_wcs,&(this->cen_),xlow,xhigh,ylow,yhigh,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),use_mask, &Nm, &beam_maj, &beam_min, &beam_pa, &deltax, &deltay, &freq);
    close_fits_file(filep);
 
+   this->Nx_=static_cast<int>(naxis[0]);
+   this->Ny_=static_cast<int>(naxis[1]);
+
    double minval;
    double maxval;
    QImage *qim=createArrayImage(this->pix_,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
@@ -320,9 +323,19 @@ int MyGraphicsView::decompose(void)
   double beta=this->scale();
   int n0=-1;
 
-  clearMemory();
-  scene->clear();
-  decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
+  // use APC if image is too large
+  if (this->Nx_*this->Ny_ > 1000*1000) {
+    std::cout<<"Image too large "<<this->Nx_<<" "<<this->Ny_<<std::endl;
+    Nx=this->Nx_;
+    Ny=this->Ny_;
+    clearMemory();
+    scene->clear();
+    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&beta,&M,&n0,&(this->av_),&(this->z_));
+  } else {
+    clearMemory();
+    scene->clear();
+    decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&(this->x_),&Nx,&(this->y_),&Ny,&beta,&M,&n0,this->xoff(),this->yoff(),this->clipmin(),this->clipmax(),&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),this->convolve_psf(),nullptr,0);
+  }
 
   this->setScale(beta);
   this->setModes(M);

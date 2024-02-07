@@ -500,6 +500,12 @@ read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *new_n
 extern int 
 decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, double **y, int *Ny, double *beta, int *M, int *n0, double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **b, double **av, double **z, position *cen, int convolve_psf, char *psf_filename, int use_mask);
 
+/**************************************************************
+ apc.c 
+**************************************************************/
+extern int 
+apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int *n0, double **av, double **z); 
+
 #ifdef __cplusplus
      } /* extern "C" */
 #endif
