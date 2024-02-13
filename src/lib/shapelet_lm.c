@@ -339,7 +339,8 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
  *      beta: scale factor
  *      n0: number of modes in each dimension
  * out:        
- *      Av: array of mode vectors size N times n0.n0, in column major order
+ *      Av: array of mode vectors size N times n0.n0, in column major order, 
+ *      i.e., first N values for 0-th mode, second N values for 1-st mode ...
  *
  */
 int
@@ -352,7 +353,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 
 	double **shpvl, *fact;
 	int n1,n2,start;
-	//double pi_4r=1/sqrt(sqrt(M_PI));
 
   /* for sorting */
   coordval *cx_val,*cy_val; 
@@ -412,8 +412,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	 if (cx_val[xci].val==cy_val[yci].val){
 		/* common index */
 		grid[zci]=cx_val[xci].val;
-		/*xindex[xci]=zci;
-		yindex[yci]=zci; */
     xindex[cx_val[xci].idx]=zci;
     yindex[cy_val[yci].idx]=zci;
 	  zci++;
@@ -421,13 +419,11 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	  yci++;	 
 	 } else if (cx_val[xci].val<cy_val[yci].val){
 		 grid[zci]=cx_val[xci].val;
-		 //xindex[xci]=zci;
      xindex[cx_val[xci].idx]=zci;
 	   zci++;
 	   xci++;	 
 	 } else {
 		 grid[zci]=cy_val[yci].val;
-		 //yindex[yci]=zci;
      yindex[cy_val[yci].idx]=zci;
 	   zci++;
 	   yci++;	 
@@ -438,7 +434,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 		/* tail from x */
 		while(xci<N) {
 		 grid[zci]=cx_val[xci].val;
-		 //xindex[xci]=zci;
      xindex[cx_val[xci].idx]=zci;
 	   zci++;
 	   xci++;	 
@@ -447,7 +442,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 		/* tail from y */
 		while(yci<N) {
 		 grid[zci]=cy_val[yci].val;
-		 //yindex[yci]=zci;
      yindex[cy_val[yci].idx]=zci;
 	   zci++;
 	   yci++;	 
@@ -586,17 +580,19 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	}
 
 #ifdef DEBUG
-	printf("Matrix dimension=%d by %d\n",N,(n0)*(n0));
+	printf("%%Matrix dimension=%d by %d\n",N,(n0)*(n0));
+  printf("A=[\n");
+	for (xci=0; xci<N; xci++) {
 	for (n1=0; n1<(n0); n1++) {
 	 for (n2=0; n2<(n0); n2++) {
-    /* fill in N*N*(zci) to N*N*(zci+1)-1 */
+    /* N*(zci) to N*(zci+1)-1 */
 		start=N*(n1*(n0)+n2);
-	  for (xci=0; xci<N; xci++) {
-        printf("%lf ",(*Av)[start+xci]);
-		}
-		printf("\n");
+    printf("%lf ",(*Av)[start+xci]);
+    }
 	 }
+	 printf("\n");
 	}
+  printf("];\n");
 #endif
 	free(grid);
 	free(xindex);

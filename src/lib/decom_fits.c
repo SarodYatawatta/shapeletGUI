@@ -139,7 +139,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
   //for (i=0; i<(*Nx)*(*Ny); ++i) {
   //  (*b)[i]*=tflux;
   //}
-  dscal((*Nx)*(*Ny),tflux,*b);
+  my_dscal((*Nx)*(*Ny),tflux,*b);
 
 #ifndef DEBUG
 	printf("Image dimension=%d by %d\n",*Nx,*Ny);
@@ -181,7 +181,7 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 #endif
   for(i=0;i<modes; i++) {
 		/* y=y+A(:,i)*a[i] */
-    daxpy(*Nx*(*Ny), &(Av[i*(*Nx)*(*Ny)]), (*av)[i], *z);
+    my_daxpy(*Nx*(*Ny), &(Av[i*(*Nx)*(*Ny)]), (*av)[i], *z);
 	}
 	
 #ifdef DEBUG
@@ -244,11 +244,11 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
   newfilename[i+9]='\0';
   /* calculate residual */
   /* res=b */
-  dcopy(*Nx*(*Ny),*b,res);
+  my_dcopy(*Nx*(*Ny),*b,1,res,1);
   /* res=res - z */
-  daxpy(*Nx*(*Ny), *z, -1.0, res);
+  my_daxpy(*Nx*(*Ny), *z, -1.0, res);
   /* scale back residual to match correct flux */
-  dscal((*Nx)*(*Ny),1.0/tflux,res);
+  my_dscal((*Nx)*(*Ny),1.0/tflux,res);
   write_fits_file(filename,newfilename,res,filep);
 
 	
@@ -466,7 +466,7 @@ decompose_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, doubl
 #endif
   for(i=0;i<modes; i++) {
 		/* y=y+A(:,i)*a[i] */
-    daxpy(*Nx*(*Ny), &(Av[i*(*Nx)*(*Ny)]), (*av)[i], *z);
+    my_daxpy(*Nx*(*Ny), &(Av[i*(*Nx)*(*Ny)]), (*av)[i], *z);
 	}
 	
 #ifdef DEBUG
@@ -528,9 +528,9 @@ decompose_fits_file_tf(char* filename, double cutoff, double **x, int *Nx, doubl
   newfilename[i+9]='\0';
   /* calculate residual */
   /* res=b */
-  dcopy(*Nx*(*Ny),*b,res);
+  my_dcopy(*Nx*(*Ny),*b,1,res,1);
   /* res=res - z */
-  daxpy(*Nx*(*Ny), *z, -1.0, res);
+  my_daxpy(*Nx*(*Ny), *z, -1.0, res);
   write_fits_file(filename,newfilename,res,filep);
 
 	

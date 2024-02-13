@@ -55,52 +55,6 @@ ilaenv(int ISPEC, char *NAME, char *OPTS, int N1, int N2, int N3, int N4) {
 	return ilaenv_(&ISPEC,NAME,OPTS,&N1,&N2,&N3,&N4);
 }
 
-/* y = a.x + y */
-void
-daxpy(int N, double *x, double a, double *y) {
-		int i=1; /* strides */
-		extern void daxpy_(int *N, double *alpha, double *x, int *incx, double *y, int *incy);
-		daxpy_(&N,&a,x,&i,y,&i);
-}
-
-/* y = x */
-void
-dcopy(int N, double *x, double *y) {
-  extern void dcopy_(int *N, double *x, int *incx, double *y, int *incy);
-  int i=1;
-  dcopy_(&N,x,&i,y,&i);
-}
-
-/* scale */
-void
-dscal(int N, double a, double *x) {
-  extern void dscal_(int *N, double *alpha, double *x, int *incx);
-  int i=1;
-  dscal_(&N,&a,x,&i);
-}
-
-/* norm */
-double
-dnrm2(int N, double *x) {
-  extern double  dnrm2_(int *N, double *x, int *incx);
-  int i=1;
-  return(dnrm2_(&N,x,&i));
-}
-
-/* max id, start from 1... */
-int
-idamax(int N, double *x, int incx) {
-    extern int idamax_(int *N, double *x, int *incx);
-    return idamax_(&N,x,&incx);
-}
-
-/* min id, start from 1... */
-int
-idamin(int N, double *x, int incx) {
-    extern int idamin_(int *N, double *x, int *incx);
-    return idamin_(&N,x,&incx);
-}
-
 /* solve the linear least squares problem using LAPACK */
 /* min_x |Ax-b|_2 norm */
 /* A: N by M, N> M 

@@ -151,13 +151,13 @@ QRgb MyGraphicsView::getRGB(double z, double maxval) {
 }
 
 QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *minval, double *maxval, bool fortran_array) {
-  int idmax=idamax(Nx*Ny,data,1)-1; /* 0.. */
+  int idmax=my_idamax(Nx*Ny,data,1)-1; /* 0.. */
   *maxval=data[idmax];
   double *data1=new double[Nx*Ny];
-  dcopy(Nx*Ny,data,data1);
+  my_dcopy(Nx*Ny,data,1,data1,1);
   /* subtract maxval to get the -ve high value */
-  daxpy(Nx*Ny,data,-1.0*(*maxval),data1);
-  int idmin=idamin(Nx*Ny,data1,1)-1;
+  my_daxpy(Nx*Ny,data,-1.0*(*maxval),data1);
+  int idmin=my_idamin(Nx*Ny,data1,1)-1;
   *minval=data[idmin];
   std::cout<<"Max "<<idmax<<" "<<*maxval<< " Min "<<idmin<<" "<<*minval<<std::endl;
   //create Image
@@ -193,14 +193,14 @@ QImage *MyGraphicsView::createArrayImage(double *data, int Nx, int Ny, double *m
 QImage *MyGraphicsView::createDiffArrayImage(double *data1, double *data2, int Nx, int Ny, double *minval, double *maxval) {
   // data= data1-data2
   double *data=new double[Nx*Ny];
-  dcopy(Nx*Ny,data1,data);
-  daxpy(Nx*Ny,data2,-1.0,data);
-  int idmax=idamax(Nx*Ny,data,1)-1; /* 0.. */
+  my_dcopy(Nx*Ny,data1,1,data,1);
+  my_daxpy(Nx*Ny,data2,-1.0,data);
+  int idmax=my_idamax(Nx*Ny,data,1)-1; /* 0.. */
   *maxval=data[idmax];
   // data=data2-data1
-  dcopy(Nx*Ny,data2,data);
-  daxpy(Nx*Ny,data1,-1.0,data);
-  int idmin=idamax(Nx*Ny,data,1)-1;
+  my_dcopy(Nx*Ny,data2,1,data,1);
+  my_daxpy(Nx*Ny,data1,-1.0,data);
+  int idmin=my_idamax(Nx*Ny,data,1)-1;
   *minval=data[idmin];
   if(*minval > *maxval) { double tmp=*maxval; *maxval=*minval; *minval=tmp; }
   std::cout<<"Max "<<*maxval<< " Min "<<*minval<<std::endl;
@@ -324,7 +324,7 @@ int MyGraphicsView::decompose(void)
   int n0=-1;
 
   // use APC if image is too large
-  if (this->Nx_*this->Ny_ > 1000*1000) {
+  if (this->Nx_*this->Ny_ > 100) {
     std::cout<<"Image too large "<<this->Nx_<<" "<<this->Ny_<<std::endl;
     Nx=this->Nx_;
     Ny=this->Ny_;
@@ -459,11 +459,11 @@ int MyGraphicsView::readFITSDir(void)
    const int totalpix=naxis[0]*naxis[1];
    // Find average image
    double *avgimage=new double[totalpix];
-   dcopy(totalpix,this->pix_,avgimage);
+   my_dcopy(totalpix,this->pix_,1,avgimage,1);
    for (int cf=0; cf<this->Nf_; cf++) {
-     daxpy(totalpix,&(this->pix_[cf*totalpix]),1.0,avgimage);
+     my_daxpy(totalpix,&(this->pix_[cf*totalpix]),1.0,avgimage);
    }
-   dscal(totalpix,1.0/(double)this->Nf_,avgimage);
+   my_dscal(totalpix,1.0/(double)this->Nf_,avgimage);
    double minval;
    double maxval;
    QImage *qim=createArrayImage(avgimage,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
@@ -475,8 +475,8 @@ int MyGraphicsView::readFITSDir(void)
    itm->setZValue(0.0);
    itm->setToolTip(this->dirName()+" Average: min "+QString::number(minval)+" max "+QString::number(maxval));
    // Find diff image (first freq - last freq)
-   dcopy(totalpix,this->pix_,avgimage);
-   daxpy(totalpix,&(this->pix_[(this->Nf_-1)*totalpix]),-1.0,avgimage); //last plane
+   my_dcopy(totalpix,this->pix_,1,avgimage,1);
+   my_daxpy(totalpix,&(this->pix_[(this->Nf_-1)*totalpix]),-1.0,avgimage); //last plane
    QImage *qim1=createArrayImage(avgimage,static_cast<int>(naxis[0]),static_cast<int>(naxis[1]),&minval,&maxval,true);
    //scale to match canvas size
    QImage qimc1=qim1->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);

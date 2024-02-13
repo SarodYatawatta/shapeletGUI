@@ -6,6 +6,7 @@ set (objects
   decom_fits.c
   fits_utils.c
   lapack.c
+  myblas.c
   shapelet_lm.c
   fft.c
   hermite.c

@@ -303,26 +303,37 @@ calculate_uv_mode_vectors_tf(double *u, int Nu, double *v, int Nv,
 extern int 
 lsq_lapack(double *Av,double *b,double *x, int N, int M);
 
+/*******************************************************
+ * myblas.c
+ *******************************************************/
 /* y = a.x + y */
 extern void
-daxpy(int N, double *x, double a, double *y);
+my_daxpy(int N, double *x, double a, double *y);
 /* y = x */
 extern void
-dcopy(int N, double *x, double *y); 
+my_dcopy(int N, double *x, int Nx, double *y, int Ny); 
 /* scale */
 extern void
-dscal(int N, double a, double *x);
+my_dscal(int N, double a, double *x);
 /* norm || ||_2 */
 extern double
-dnrm2(int N, double *x);
+my_dnrm2(int N, double *x);
 /* max |x| id, start from 1... */
 extern int
-idamax(int N, double *x, int incx);
+my_idamax(int N, double *x, int incx);
 /* min |x| id, start from 1... */
 extern int
-idamin(int N, double *x, int incx);
+my_idamin(int N, double *x, int incx);
 
+/* BLAS DGEMM C = alpha*op(A)*op(B)+ beta*C */
+/* op(A) : M x K, op(B) : K x N, C: MxN */
+extern void
+my_dgemm(char transa, char transb, int M, int N, int K, double alpha, double *A, int lda, double *B, int ldb, double beta, double *C, int ldc);
 
+/* A=U S VT, so V needs NOT to be transposed */
+extern int
+my_dgesvd(char JOBU, char JOBVT, int M, int N, double *A, int LDA, double *S,
+   double *U, int LDU, double *VT, int LDVT, double *WORK, int LWORK);
 /*******************************************************
  * decom_fits.c
  ******************************************************/
