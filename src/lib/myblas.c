@@ -96,7 +96,7 @@ __attribute__ ((target(MIC)))
   return(dnrm2_(&N,x,&i));
 }
 float
-my_fnrm2(int N, float *x) {
+my_snrm2(int N, float *x) {
 #ifdef USE_MIC
 __attribute__ ((target(MIC)))
 #endif
@@ -233,6 +233,14 @@ __attribute__ ((target(MIC)))
   extern void dgemv_(char *TRANS, int *M, int *N, double *ALPHA, double *A, int *LDA, double *X, int *INCX, double *BETA, double *Y, int *INCY);
   dgemv_(&trans, &M, &N, &alpha, A, &lda, x, &incx, &beta, y, &incy);
 }
+
+/* BLAS SGEMV  y = alpha*op(A)*x+ beta*y : op 'T' or 'N' */
+void
+my_sgemv(char trans, int M, int N, float alpha, float *A, int lda, float *x, int incx,  float beta, float *y, int incy) {
+  extern void sgemv_(char *TRANS, int *M, int *N, float *ALPHA, float *A, int *LDA, float *X, int *INCX, float *BETA, float *Y, int *INCY);
+  sgemv_(&trans, &M, &N, &alpha, A, &lda, x, &incx, &beta, y, &incy);
+}
+
 
 
 /* following routines used in LAPACK solvers */
@@ -450,7 +458,7 @@ __attribute__ ((target(MIC)))
 /* read x values spaced by Nx (so x size> N*Nx) */
 /* write to y values spaced by Ny  (so y size > N*Ny) */
 void
-my_fcopy(int N, float *x, int Nx, float *y, int Ny) {
+my_scopy(int N, float *x, int Nx, float *y, int Ny) {
 #ifdef USE_MIC
 __attribute__ ((target(MIC)))
 #endif

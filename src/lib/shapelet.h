@@ -309,15 +309,23 @@ lsq_lapack(double *Av,double *b,double *x, int N, int M);
 /* y = a.x + y */
 extern void
 my_daxpy(int N, double *x, double a, double *y);
+extern void
+my_saxpy(int N, float *x, float a, float *y);
 /* y = x */
 extern void
 my_dcopy(int N, double *x, int Nx, double *y, int Ny); 
+extern void
+my_scopy(int N, float *x, int Nx, float *y, int Ny);
 /* scale */
 extern void
 my_dscal(int N, double a, double *x);
+extern void
+my_sscal(int N, float a, float *x);
 /* norm || ||_2 */
 extern double
 my_dnrm2(int N, double *x);
+extern float
+my_snrm2(int N, float *x);
 /* max |x| id, start from 1... */
 extern int
 my_idamax(int N, double *x, int incx);
@@ -334,6 +342,10 @@ my_dgemm(char transa, char transb, int M, int N, int K, double alpha, double *A,
 extern int
 my_dgesvd(char JOBU, char JOBVT, int M, int N, double *A, int LDA, double *S,
    double *U, int LDU, double *VT, int LDVT, double *WORK, int LWORK);
+
+/* BLAS SGEMV  y = alpha*op(A)*x+ beta*y : op 'T' or 'N' */
+extern void
+my_sgemv(char trans, int M, int N, float alpha, float *A, int lda, float *x, int incx,  float beta, float *y, int incy);
 /*******************************************************
  * decom_fits.c
  ******************************************************/
@@ -515,7 +527,7 @@ decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, doub
  apc.c 
 **************************************************************/
 extern int 
-apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int *n0, double **av, double **z); 
+apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen); 
 
 #ifdef __cplusplus
      } /* extern "C" */

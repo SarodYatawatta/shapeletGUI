@@ -330,7 +330,7 @@ int MyGraphicsView::decompose(void)
     Ny=this->Ny_;
     clearMemory();
     scene->clear();
-    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&beta,&M,&n0,&(this->av_),&(this->z_));
+    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&beta,&M,&n0,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_));
   } else {
     clearMemory();
     scene->clear();
@@ -343,14 +343,16 @@ int MyGraphicsView::decompose(void)
 
   double minval;
   double maxval;
-  QImage *qim=createArrayImage(this->pix_,Nx,Ny,&minval,&maxval,true);
-  //scale to match canvas size
-  QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
-  delete qim;
-  QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
-  itm->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
-  itm->setZValue(0.0);
-  itm->setToolTip(this->fileName()+" min "+QString::number(minval)+" max "+QString::number(maxval));
+  if (this->pix_) {
+   QImage *qim=createArrayImage(this->pix_,Nx,Ny,&minval,&maxval,true);
+   //scale to match canvas size
+   QImage qimc=qim->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::SmoothTransformation);
+   delete qim;
+   QGraphicsPixmapItem *itm=scene->addPixmap(QPixmap::fromImage(qimc));
+   itm->setPos(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+   itm->setZValue(0.0);
+   itm->setToolTip(this->fileName()+" min "+QString::number(minval)+" max "+QString::number(maxval));
+  }
 
   QImage *qim_mod=createArrayImage(this->z_,Nx,Ny,&minval,&maxval,true);
   //scale to match canvas size
@@ -370,6 +372,7 @@ int MyGraphicsView::decompose(void)
   itm_coef->setZValue(0.0);
   itm_coef->setToolTip(tr("Coefficients min ")+QString::number(minval)+" max "+QString::number(maxval));
 
+  if (this->pix_) {
   QImage *qim_res=createDiffArrayImage(this->pix_,this->z_,Nx,Ny,&minval,&maxval);
   //scale to match canvas size
   QImage qimc_res=qim_res->scaled(CANVAS_WIDTH/2, CANVAS_HEIGHT/2, Qt::IgnoreAspectRatio,Qt::FastTransformation);
@@ -378,6 +381,7 @@ int MyGraphicsView::decompose(void)
   itm_res->setPos(CANVAS_WIDTH, CANVAS_HEIGHT);
   itm_res->setZValue(0.0);
   itm_res->setToolTip(tr("Residual min ")+QString::number(minval)+" max "+QString::number(maxval));
+  }
 
 
   this->show();
