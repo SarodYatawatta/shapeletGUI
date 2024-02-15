@@ -457,7 +457,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   /* since data is row major, divide the data into rows (axis 1 or y axis)
    * to distribute the work */
   long int Ncol=divide_into_subsets(J,fitsref.arr_dims.d[1],lowp,highp);
-  printf("divide columns %ld into %ld\n",fitsref.arr_dims.d[1],Ncol);
 
   /* find l,m of image center because 
    * we need to shit the l,m grid to have this as origin (0,0) */
@@ -475,7 +474,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   double l0,m0;
   l0=cimgc[0];
   m0=cimgc[1];
-  printf("origin %lf %lf\n",l0,m0);
   *Nx=fitsref.arr_dims.d[0];
   *Ny=fitsref.arr_dims.d[1];
 
@@ -484,7 +482,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
    * here */
   long int totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
       *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1);
-  printf("%ld %ld %ld %ld %ld\n",fitsref.arr_dims.lpix[0],fitsref.arr_dims.hpix[0],fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
   float *image;
   if ((image=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
@@ -564,7 +561,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     /* select the rows by incremental access of increment J */
     totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
       *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1)/J; // tail will be truncated
-    printf("subset %ld %ld %ld\n",fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
     if ((b[ci]=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
@@ -579,10 +575,17 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
       exit(1);
     }
 
-    /* copy subimage from full */
+    /* copy subimage from full image */
     my_scopy(totalpix,&image[ci],J,b[ci],1);
     my_dcopy(totalpix,&lgrid[ci],J,lcoord,1);
     my_dcopy(totalpix,&mgrid[ci],J,mcoord,1);
+    /* check the tail of b[] to see if any are zero (cannot be used for fitting) */
+    int tail=0;
+    for (int nt=0; nt<J; nt++) {
+      if (fabsf(b[ci][totalpix-nt])<=1e-5f){
+        tail++;
+      }
+    }
 
     if ((P[ci]=(float*)calloc((size_t)modes*modes,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
@@ -594,7 +597,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     }
     /* use the coordinate values to calculate the basis functions, and
      * the projection matrix, and the initial solution */
-    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix,b[ci],P[ci],xb[ci],modes,*beta, *n0);
+    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci],modes,*beta, *n0);
 
     free(lcoord);
     free(mcoord);
@@ -689,7 +692,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     fitsref.arr_dims.hpix[1]=highp[ci];
     long int totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
       *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1);
-    printf("%ld %ld %ld\n",fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
     /* create grid for this sub-image */
     double *pixelc,*imgc,*worldc,*phic,*thetac;
     int *statc;
