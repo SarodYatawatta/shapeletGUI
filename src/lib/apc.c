@@ -28,7 +28,7 @@
 #include "shapelet.h"
 
 
-/* imgrid: coordinate grid, 4xnpix x 1 , each 4 values: l (deg),m (deg),Freq,Stokes (last two not used)
+/* lgrid,mgrid: l,m coordinate grid, each npix x 1 , l (deg),m (deg)
  * l0,m0 : coords of center (deg)
  * b: data vector, npix x 1 
  * P: projection matrix, modes x modes, output
@@ -41,7 +41,7 @@
  * Calculate projection matrix and initial solution for this subproblem
  */
 static int
-calculate_projection_matrix_and_solution(double *imgrid, double l0, double m0, int npix, float *b, float *P, float *x, int modes, double beta, int n0) 
+calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0, double m0, int npix, float *b, float *P, float *x, int modes, double beta, int n0) 
 {
 
   if (modes != n0*n0) {
@@ -61,11 +61,11 @@ calculate_projection_matrix_and_solution(double *imgrid, double l0, double m0, i
   }
   /* copy l,m coords */
   for (int ci=0; ci<npix; ci++) {
-    l[ci]=-(imgrid[4*ci]-l0)*M_PI/180.0;
-    m[ci]=(imgrid[4*ci+1]-m0)*M_PI/180.0;
+    l[ci]=-(lgrid[ci]-l0)*M_PI/180.0;
+    m[ci]=(mgrid[ci]-m0)*M_PI/180.0;
   }
 
-  /* Av storage will be allocated within the routine */
+  /* Av (npix x modes) storage will be allocated within the routine */
   //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
   calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
 
@@ -205,6 +205,12 @@ calculate_projection_matrix_and_solution(double *imgrid, double l0, double m0, i
   for (int ci=0; ci<npix; ci++) {
     bd[ci]=(double)b[ci];
   }
+
+  /* add diagonal conditioner for Av */
+ /* for (int ci=0; ci<modes; ci++) {
+    Av[ci*npix+ci]+=1e-9;
+  } */
+
   /* find least squares estimate for x */
   lsq_lapack(Av,bd,xd,npix,modes);
 
@@ -263,9 +269,11 @@ evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, dou
     my_daxpy(npix,&Av[ci*npix],z[ci],b);
   }
   
+  /*
   for (int ci=0; ci<npix; ci++) {
     b[ci]=Av[2*npix+ci];
   }
+  */
   
 
   free(l);
@@ -438,10 +446,12 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   /* get data type */
   fits_get_img_type(fitsref.fptr, &bitpix, &status);
   if (status) fits_report_error(stderr,status);
-  /* use the whole y-axis */
+  /* use the whole x,y-axes */
   /* correct the coordinates for 1 indexing */
   fitsref.arr_dims.lpix[0]=1;
   fitsref.arr_dims.hpix[0]=fitsref.arr_dims.d[0];
+  fitsref.arr_dims.lpix[1]=1;
+  fitsref.arr_dims.hpix[1]=fitsref.arr_dims.d[1];
   /* only work with stokes I */
   fitsref.arr_dims.hpix[2]=fitsref.arr_dims.hpix[3]=fitsref.arr_dims.lpix[2]=fitsref.arr_dims.lpix[3]=1;
   /* since data is row major, divide the data into rows (axis 1 or y axis)
@@ -469,65 +479,111 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   *Nx=fitsref.arr_dims.d[0];
   *Ny=fitsref.arr_dims.d[1];
 
-  for (int ci=0; ci<J; ci++) {
-    /*****************************************************************/
-    /* select the rows (1 indexing) */
-    fitsref.arr_dims.lpix[1]=lowp[ci];
-    fitsref.arr_dims.hpix[1]=highp[ci];
-    long int totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
+  /*****************************************************************/
+  /* read the whole image and create coordinate for the whole image
+   * here */
+  long int totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
       *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1);
-    printf("%ld %ld %ld\n",fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
-    if ((b[ci]=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
+  printf("%ld %ld %ld %ld %ld\n",fitsref.arr_dims.lpix[0],fitsref.arr_dims.hpix[0],fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
+  float *image;
+  if ((image=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    /* read sub-image */
-    fits_read_subset(fitsref.fptr, TFLOAT, fitsref.arr_dims.lpix, fitsref.arr_dims.hpix, increment,
-        &nullval, b[ci], &null_flag, &status);
-    if (status) fits_report_error(stderr,status);
-    /* create grid for this sub-image */
-    double *pixelc,*imgc,*worldc,*phic,*thetac;
-    int *statc;
-    if ((pixelc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
+  }
+  /* read whole-image */
+  fits_read_subset(fitsref.fptr, TFLOAT, fitsref.arr_dims.lpix, fitsref.arr_dims.hpix, increment,
+        &nullval, image, &null_flag, &status);
+  if (status) fits_report_error(stderr,status);
+  /* create grid for whole-image */
+  double *pixelc,*imgc,*worldc,*phic,*thetac;
+  int *statc;
+  if ((pixelc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    if ((imgc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
+  }
+  if ((imgc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    if ((worldc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
+  }
+  if ((worldc=(double*)calloc((size_t)totalpix*4,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    if ((phic=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+  }
+  if ((phic=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    if ((thetac=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+  }
+  if ((thetac=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
-    if ((statc=(int*)calloc((size_t)totalpix,sizeof(int)))==0) {
+  }
+  if ((statc=(int*)calloc((size_t)totalpix,sizeof(int)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
-    }
+  }
 
-    int kk=0;
-    for (int jj=fitsref.arr_dims.lpix[1];jj<=fitsref.arr_dims.hpix[1];jj++) {
-    for (int ii=fitsref.arr_dims.lpix[0];ii<=fitsref.arr_dims.hpix[0];ii++) {
+  int kk=0;
+  for (int jj=fitsref.arr_dims.lpix[1];jj<=fitsref.arr_dims.hpix[1];jj++) {
+  for (int ii=fitsref.arr_dims.lpix[0];ii<=fitsref.arr_dims.hpix[0];ii++) {
              pixelc[kk+0]=(double)ii;
              pixelc[kk+1]=(double)jj;
              pixelc[kk+2]=pixelc[kk+3]=1.0;
              kk+=4;
-    }
-    }
-    if ((status = wcsp2s(fitsref.wcs, totalpix, naxis, pixelc, imgc, phic, thetac,
+   }
+  }
+  if ((status = wcsp2s(fitsref.wcs, totalpix, naxis, pixelc, imgc, phic, thetac,
        worldc, statc))) {
        fprintf(stderr,"wcsp2s ERROR %2d\n", status);
        /* Handle Invalid pixel coordinates. */
        if (status == 8) status = 0;
+  }
+
+  /* copy l,m coords (size 4 pixelsx1) into smaller arrays */
+  double *lgrid,*mgrid;
+  if ((lgrid=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  } 
+  if ((mgrid=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  } 
+  for(int ci=0; ci<totalpix; ci++) {
+     lgrid[ci]=imgc[4*ci]; // l (deg)
+     mgrid[ci]=imgc[4*ci+1]; // m (deg)
+  }
+  free(pixelc);
+  free(imgc);
+  free(worldc);
+  free(phic);
+  free(thetac);
+  free(statc);
+  /*****************************************************************/
+  for (int ci=0; ci<J; ci++) {
+    /*****************************************************************/
+    /* select the rows by incremental access of increment J */
+    totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
+      *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1)/J; // tail will be truncated
+    printf("subset %ld %ld %ld\n",fitsref.arr_dims.lpix[1],fitsref.arr_dims.hpix[1],totalpix);
+    if ((b[ci]=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
     }
+    double *lcoord,*mcoord;
+    if ((lcoord=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+    if ((mcoord=(double*)calloc((size_t)totalpix,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+    }
+
+    /* copy subimage from full */
+    my_scopy(totalpix,&image[ci],J,b[ci],1);
+    my_dcopy(totalpix,&lgrid[ci],J,lcoord,1);
+    my_dcopy(totalpix,&mgrid[ci],J,mcoord,1);
+
     if ((P[ci]=(float*)calloc((size_t)modes*modes,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
@@ -538,20 +594,20 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     }
     /* use the coordinate values to calculate the basis functions, and
      * the projection matrix, and the initial solution */
-    calculate_projection_matrix_and_solution(imgc,l0,m0,totalpix,b[ci],P[ci],xb[ci],modes,*beta, *n0);
-    free(pixelc);
-    free(imgc);
-    free(worldc);
-    free(phic);
-    free(thetac);
-    free(statc);
+    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix,b[ci],P[ci],xb[ci],modes,*beta, *n0);
+
+    free(lcoord);
+    free(mcoord);
     /*****************************************************************/
   }
-  
+  free(image);
+  free(lgrid);
+  free(mgrid);
+
   /*****************************************************************/
   float gamma=0.1f;
   float eta=0.1f;
-  int Nadmm=1000;
+  int Nadmm=100;
   /* solution */
   float *x;
   if ((x=(float*)calloc((size_t)modes,sizeof(float)))==0) {

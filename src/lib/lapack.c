@@ -77,7 +77,6 @@ lsq_lapack(double *Av,double *b,double *x, int N, int M) {
 	}
 	memcpy((void*)A,(void*)Av,(size_t)(M*N)*sizeof(double));
 
-
 	smlsiz=ilaenv(9,"DGELSD","",N,M,1,-1);
 	printf("smlsiz=%d\n",smlsiz);
 	nlvl=(int)(log((double)(M)/(smlsiz+1.0))/log(2.0))+1;
