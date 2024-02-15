@@ -330,7 +330,7 @@ int MyGraphicsView::decompose(void)
     Ny=this->Ny_;
     clearMemory();
     scene->clear();
-    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&beta,&M,&n0,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_));
+    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&Nx, &Ny, &beta,&M,&n0,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_));
   } else {
     clearMemory();
     scene->clear();

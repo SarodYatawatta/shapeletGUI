@@ -186,6 +186,9 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
 extern int
 calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, double **Av);
 
+/* no sorting etc, just simple calculations */
+extern int
+calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0, double **Av);
 
 /* calculate mode vectors for the regular grid given by the x,y arrays after 
  * performing the given linear transform. i.e.,
@@ -527,7 +530,7 @@ decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, doub
  apc.c 
 **************************************************************/
 extern int 
-apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen); 
+apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen); 
 
 #ifdef __cplusplus
      } /* extern "C" */

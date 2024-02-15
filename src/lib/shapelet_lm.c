@@ -688,3 +688,42 @@ calculate_mode_vectors_tf(double *x, int Nx, double *y, int Ny,
  free(yy);
  return 0;
 }
+
+
+
+int
+calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0, double **Av) {
+
+  /* set up factorial array */
+  double *fact;
+  if ((fact=(double*)calloc((size_t)(n0),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  fact[0]=1.0;
+  for (int ci=1; ci<(n0); ci++) {
+    fact[ci]=(ci)*fact[ci-1];
+  }
+
+  if ((*Av=(double*)calloc((size_t)(N*(n0)*(n0)),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  for (int ci=0; ci<N; ci++) {
+    double xx=x[ci]/beta;
+    double yy=y[ci]/beta;
+    int cj=0;
+    for (int n2=0; n2<n0; n2++) {
+      for (int n1=0; n1<n0; n1++) {
+        (*Av)[ci+cj*N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*fact[n2]));
+        cj++;
+      }
+    }
+  }
+
+  free(fact);
+  return 0;
+}
+

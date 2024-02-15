@@ -61,12 +61,13 @@ calculate_projection_matrix_and_solution(double *imgrid, double l0, double m0, i
   }
   /* copy l,m coords */
   for (int ci=0; ci<npix; ci++) {
-    l[ci]=-(imgrid[4*ci]+l0)*M_PI/180.0;
+    l[ci]=-(imgrid[4*ci]-l0)*M_PI/180.0;
     m[ci]=(imgrid[4*ci+1]-m0)*M_PI/180.0;
   }
 
   /* Av storage will be allocated within the routine */
-  calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
+  //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
+  calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
 
   /* check norm of Av, if too small skip calculation and set
    * projection to I and original solution to zero */
@@ -256,14 +257,16 @@ evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, dou
   }
 
   /* Av storage will be allocated within the routine */
-  calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
+  //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
+  calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
   for (int ci=0; ci<modes; ci++) {
     my_daxpy(npix,&Av[ci*npix],z[ci],b);
   }
   
   for (int ci=0; ci<npix; ci++) {
-    b[ci]=Av[ci];
+    b[ci]=Av[2*npix+ci];
   }
+  
 
   free(l);
   free(m);
@@ -295,9 +298,6 @@ divide_into_subsets(int J,long int d, long int *lowp, long int *highp) {
     counter+=p;
   }
 
-  for (int ci=0; ci<J; ci++) {
-    printf("C %d %ld %ld\n",ci,lowp[ci],highp[ci]);
-  }
   return p;
 }
 
@@ -305,7 +305,7 @@ divide_into_subsets(int J,long int d, long int *lowp, long int *highp) {
  * (APC)
  */
 int
-apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen) {
+apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen) {
 
   /* open the file once, get all the metadata to make a plan to divide the pixels */
   io_buff fitsref;
@@ -466,6 +466,8 @@ apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int
   l0=cimgc[0];
   m0=cimgc[1];
   printf("origin %lf %lf\n",l0,m0);
+  *Nx=fitsref.arr_dims.d[0];
+  *Ny=fitsref.arr_dims.d[1];
 
   for (int ci=0; ci<J; ci++) {
     /*****************************************************************/
@@ -549,7 +551,7 @@ apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int
   /*****************************************************************/
   float gamma=0.1f;
   float eta=0.1f;
-  int Nadmm=10;
+  int Nadmm=1000;
   /* solution */
   float *x;
   if ((x=(float*)calloc((size_t)modes,sizeof(float)))==0) {
@@ -692,23 +694,6 @@ apc_decompose_fits_file(char* filename, double cutoff, double *beta, int *M, int
     free(statc);
     /*****************************************************************/
   }
-
-  double *img1;
-  if ((img1=(double*)calloc((size_t) fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],sizeof(double)))==0) {
-      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
-      exit(1);
-  }
-  fitsref.arr_dims.lpix[1]=1;
-  fitsref.arr_dims.hpix[1]=fitsref.arr_dims.d[1];
-  fits_read_subset(fitsref.fptr, TDOUBLE, fitsref.arr_dims.lpix, fitsref.arr_dims.hpix, increment,
-    &nullval, img1, &null_flag, &status);
-
- for (int ci=0; ci<10; ci++) {
-   printf("%d %lf %lf\n",ci,(*img)[200-ci],img1[200-ci]);
- }
-
- free(img1);
-
 
   free(lowp);
   free(highp);
