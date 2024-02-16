@@ -206,13 +206,10 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
     bd[ci]=(double)b[ci];
   }
 
-  /* add diagonal conditioner for Av */
- /* for (int ci=0; ci<modes; ci++) {
-    Av[ci*npix+ci]+=1e-9;
-  } */
-
   /* find least squares estimate for x */
-  lsq_lapack(Av,bd,xd,npix,modes);
+  //lsq_lapack(Av,bd,xd,npix,modes);
+  // normalize b ~ ||b||=1 and scale back solution x
+  elasticnet_fista(Av,bd,xd,npix,modes,1e-3,1e-9,30);
 
   for (int ci=0; ci<modes; ci++) {
     x[ci]=(float)xd[ci];
@@ -290,6 +287,7 @@ static long int
 divide_into_subsets(int J,long int d, long int *lowp, long int *highp) {
   if (J>d) {
     fprintf(stderr,"%s: %d: number of subtasks cannot be higher than the total\n",__FILE__,__LINE__);
+    exit(1);
   }
 
   long int p =d / J;
@@ -351,7 +349,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   
 
   /* number of subtasks */
-  int J=10;
+  int J=2500;
   /* image data, each Npix x 1 */
   float **b;
   if ((b=(float**)calloc((size_t)J,sizeof(float*)))==0) {
@@ -370,13 +368,15 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
   }
-  /* for division into (almost equal) subimages */
+  /* for division into (almost equal) subimages  - reconstruction,
+   * keep this lower than the number of columns */
+  int Jimg=10;
   long int *lowp,*highp;
-  if ((lowp=(long int*)calloc((size_t)J,sizeof(long int)))==0) {
+  if ((lowp=(long int*)calloc((size_t)Jimg,sizeof(long int)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
   }
-  if ((highp=(long int*)calloc((size_t)J,sizeof(long int)))==0) {
+  if ((highp=(long int*)calloc((size_t)Jimg,sizeof(long int)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
   }
@@ -456,7 +456,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   fitsref.arr_dims.hpix[2]=fitsref.arr_dims.hpix[3]=fitsref.arr_dims.lpix[2]=fitsref.arr_dims.lpix[3]=1;
   /* since data is row major, divide the data into rows (axis 1 or y axis)
    * to distribute the work */
-  long int Ncol=divide_into_subsets(J,fitsref.arr_dims.d[1],lowp,highp);
+  long int Ncol=divide_into_subsets(Jimg,fitsref.arr_dims.d[1],lowp,highp);
 
   /* find l,m of image center because 
    * we need to shit the l,m grid to have this as origin (0,0) */
@@ -556,11 +556,14 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   free(thetac);
   free(statc);
   /*****************************************************************/
+  printf("original pixels %ld\n",totalpix);
+  totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
+      *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1)/J; // tail will be truncated
+  printf("subtask pixels %ld\n",totalpix);
+
   for (int ci=0; ci<J; ci++) {
     /*****************************************************************/
     /* select the rows by incremental access of increment J */
-    totalpix=(fitsref.arr_dims.hpix[0]-fitsref.arr_dims.lpix[0]+1)
-      *(fitsref.arr_dims.hpix[1]-fitsref.arr_dims.lpix[1]+1)/J; // tail will be truncated
     if ((b[ci]=(float*)calloc((size_t)totalpix,sizeof(float)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
@@ -685,7 +688,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
       exit(1);
   }
   long int offset=0;
-  for (int ci=0; ci<J; ci++) {
+  for (int ci=0; ci<Jimg; ci++) {
     /*****************************************************************/
     /* select the rows (1 indexing) */
     fitsref.arr_dims.lpix[1]=lowp[ci];

@@ -158,7 +158,9 @@ int decompose_fits_file(char* filename, double cutoff, double **x, int *Nx, doub
 	}
 #endif
 
-    lsq_lapack(Av,*b,*av, (*Nx)*(*Ny), (*n0)*(*n0));
+    //lsq_lapack(Av,*b,*av, (*Nx)*(*Ny), (*n0)*(*n0));
+    elasticnet_fista(Av,*b,*av,(*Nx)*(*Ny),(*n0)*(*n0),1e-3,1e-9,30);
+
 
 #ifdef DEBUG
 	printf("solution\n");

@@ -141,3 +141,82 @@ lsq_lapack(double *Av,double *b,double *x, int N, int M) {
 
 	return info;
 }
+
+
+/* solve the linear least squares problem using FISTA */
+/* min_x |Ax-b|_2 norm + mu |x|_1 + lambda |x|_2^2 */
+/* A: N by M, N> M 
+ * b: N by 1 vector 
+ * x: M by 1 vector 
+ * mu: L1 penalty, lambda L2 penalty */
+int 
+elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, double mu, int maxiter) {
+  /* cost = ||Ax-b||_2^2 + mu ||x||_1 + lambda ||x||_2^2
+   * gradient = A^T(Ax-b) + lambda x */
+
+  /* set x = 0 */
+  memset(x,0,M*sizeof(double));
+
+  double *z,*xold,*grad,*residual;
+  if ((z=(double*)calloc((size_t)M,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  }
+  if ((xold=(double*)calloc((size_t)M,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  }
+  if ((residual=(double*)calloc((size_t)N,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  }
+  if ((grad=(double*)calloc((size_t)M,sizeof(double)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  }
+
+  /* having small L makes 1/L large and to diverge, hence keep L large */
+  double L=my_dnrm2(M*N,Av)*M*N;
+  /* if L<1/1e-3, might diverge, so catch it */
+  if (L<1.0/1e-3) { L=1.0/1e-3; }
+
+  double t=1.0;
+  for (int ci=0; ci<maxiter; ci++) {
+    memcpy(xold,x,M*sizeof(double));
+    /* gradient */
+    memcpy(residual,b,N*sizeof(double));
+    my_dgemv('N',N,M,1.0,Av,N,z,1,-1.0,residual,1);
+
+    memcpy(grad,z,M*sizeof(double));
+    my_dgemv('T',N,M,1.0,Av,N,residual,1,lambda,grad,1);
+
+    my_daxpy(M,grad,-1.0/L,z);
+
+    /* soft threshold z and update x */
+    if (mu>0.0) {
+    double thresh=t*mu;
+    for (int cj=0; cj<M; cj++) {
+       double r1=fabs(z[cj])-thresh;
+       double mplus=(r1>0.0?r1:0.0);
+       x[cj]=(z[cj]>0.0?mplus:-mplus);
+    }
+    } else {
+      memcpy(x,z,M*sizeof(double));
+    }
+    double t0=t;
+    t=(1.0+sqrt(1+4*t*t))/2.0;
+
+    double scalefac=(t-1.0)/t0;
+    memcpy(z,x,M*sizeof(double));
+    my_dscal(M,1.0+scalefac,z);
+    my_daxpy(M, xold, -scalefac, z);
+  }
+
+
+  free(z);
+  free(xold);
+  free(residual);
+  free(grad);
+
+  return 0;
+}

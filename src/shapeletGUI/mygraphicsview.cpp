@@ -324,7 +324,7 @@ int MyGraphicsView::decompose(void)
   int n0=-1;
 
   // use APC if image is too large
-  if (this->Nx_*this->Ny_ > 100) {
+  if (this->Nx_*this->Ny_ < 100) {
     std::cout<<"Image too large "<<this->Nx_<<" "<<this->Ny_<<std::endl;
     Nx=this->Nx_;
     Ny=this->Ny_;

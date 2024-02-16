@@ -306,6 +306,16 @@ calculate_uv_mode_vectors_tf(double *u, int Nu, double *v, int Nv,
 extern int 
 lsq_lapack(double *Av,double *b,double *x, int N, int M);
 
+
+/* solve the linear least squares problem using FISTA */
+/* min_x |Ax-b|_2 norm + mu |x|_1 + lambda |x|_2^2 */
+/* A: N by M, N> M
+ * b: N by 1 vector
+ * x: M by 1 vector
+ * mu: L1 penalty, lambda L2 penalty */
+extern int
+elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, double mu, int maxiter);
+
 /*******************************************************
  * myblas.c
  *******************************************************/
@@ -347,6 +357,8 @@ my_dgesvd(char JOBU, char JOBVT, int M, int N, double *A, int LDA, double *S,
    double *U, int LDU, double *VT, int LDVT, double *WORK, int LWORK);
 
 /* BLAS SGEMV  y = alpha*op(A)*x+ beta*y : op 'T' or 'N' */
+extern void
+my_dgemv(char trans, int M, int N, double alpha, double *A, int lda, double *x, int incx,  double beta, double *y, int incy);
 extern void
 my_sgemv(char trans, int M, int N, float alpha, float *A, int lda, float *x, int incx,  float beta, float *y, int incy);
 /*******************************************************
