@@ -190,6 +190,10 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 extern int
 calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0, double **Av);
 
+/* multi-threaded version */
+extern int
+calculate_mode_vectors_thread(double *x, double *y, int N,  double beta, int n0, double **Av, int Nt);
+
 /* calculate mode vectors for the regular grid given by the x,y arrays after 
  * performing the given linear transform. i.e.,
  * |X| =    |a  0| |cos(th)  sin(th)| { |x| - |p| }
@@ -541,8 +545,12 @@ decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, doub
 /**************************************************************
  apc.c 
 **************************************************************/
+/* outfile: model will be written to this FITS file 
+ * J: number of subtasks 
+ * Nt: number of threads
+ */
 extern int 
-apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen); 
+apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen, char* outfile, int J, int Nt); 
 
 #ifdef __cplusplus
      } /* extern "C" */

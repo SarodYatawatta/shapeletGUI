@@ -36,12 +36,13 @@
  * modes: number of modes
  * beta: shapelet scale 
  * n0: order, modes = n0*n0
+ * Nt: number of threads
  *
  *
  * Calculate projection matrix and initial solution for this subproblem
  */
 static int
-calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0, double m0, int npix, float *b, float *P, float *x, int modes, double beta, int n0) 
+calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0, double m0, int npix, float *b, float *P, float *x, int modes, double beta, int n0, int Nt) 
 {
 
   if (modes != n0*n0) {
@@ -67,7 +68,8 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
 
   /* Av (npix x modes) storage will be allocated within the routine */
   //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
-  calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
+  //calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
+  calculate_mode_vectors_thread(l,m,npix,beta,n0,&Av,Nt);
 
   /* check norm of Av, if too small skip calculation and set
    * projection to I and original solution to zero */
@@ -233,9 +235,10 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
  * z: modes x 1, model
  * beta: shapelet scale
  * n0: modes = n0*n0
+ * Nt: number of threads
  */
 static int
-evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, double *b, double *z, int modes, double beta, int n0) 
+evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, double *b, double *z, int modes, double beta, int n0, int Nt) 
 {
 
   if (modes != n0*n0) {
@@ -261,7 +264,8 @@ evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, dou
 
   /* Av storage will be allocated within the routine */
   //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
-  calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
+  //calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
+  calculate_mode_vectors_thread(l,m,npix,beta,n0,&Av,Nt);
   for (int ci=0; ci<modes; ci++) {
     my_daxpy(npix,&Av[ci*npix],z[ci],b);
   }
@@ -311,7 +315,7 @@ divide_into_subsets(int J,long int d, long int *lowp, long int *highp) {
  * (APC)
  */
 int
-apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen) {
+apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen, char* outfile, int J, int Nt) {
 
   /* open the file once, get all the metadata to make a plan to divide the pixels */
   io_buff fitsref;
@@ -348,8 +352,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   int modes=*M;
   
 
-  /* number of subtasks */
-  int J=2500;
   /* image data, each Npix x 1 */
   float **b;
   if ((b=(float**)calloc((size_t)J,sizeof(float*)))==0) {
@@ -455,8 +457,8 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   /* only work with stokes I */
   fitsref.arr_dims.hpix[2]=fitsref.arr_dims.hpix[3]=fitsref.arr_dims.lpix[2]=fitsref.arr_dims.lpix[3]=1;
   /* since data is row major, divide the data into rows (axis 1 or y axis)
-   * to distribute the work */
-  long int Ncol=divide_into_subsets(Jimg,fitsref.arr_dims.d[1],lowp,highp);
+  * to distribute the work */
+  divide_into_subsets(Jimg,fitsref.arr_dims.d[1],lowp,highp);
 
   /* find l,m of image center because 
    * we need to shit the l,m grid to have this as origin (0,0) */
@@ -585,7 +587,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     /* check the tail of b[] to see if any are zero (cannot be used for fitting) */
     int tail=0;
     for (int nt=0; nt<J; nt++) {
-      if (fabsf(b[ci][totalpix-nt])<=1e-5f){
+      if (fabsf(b[ci][totalpix-nt-1])<=1e-5f){
         tail++;
       }
     }
@@ -600,7 +602,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     }
     /* use the coordinate values to calculate the basis functions, and
      * the projection matrix, and the initial solution */
-    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci],modes,*beta, *n0);
+    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci],modes,*beta, *n0, Nt);
 
     free(lcoord);
     free(mcoord);
@@ -745,7 +747,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
 
     /* use the coordinate values to calculate the basis functions, and
      * the model image */
-    evaluate_model_over_subimage(imgc, l0, m0, totalpix, &((*z)[offset]), *av, modes, *beta, *n0);
+    evaluate_model_over_subimage(imgc, l0, m0, totalpix, &((*z)[offset]), *av, modes, *beta, *n0, Nt);
     offset+=totalpix;
     free(pixelc);
     free(imgc);
@@ -768,6 +770,15 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   cen->dec_m=(int)((cworldc[1]-cen->dec_d)*60.0);
   cen->dec_s=(cworldc[1]-cen->dec_d-cen->dec_m/60.0)*3600.0;
 
+
+  /* if output file is given, write model to output */
+  if (outfile) {
+    fitsref.arr_dims.lpix[0]=1;
+    fitsref.arr_dims.hpix[0]=fitsref.arr_dims.d[0];
+    fitsref.arr_dims.lpix[1]=1;
+    fitsref.arr_dims.hpix[1]=fitsref.arr_dims.d[1];
+    write_fits_file(filename, outfile,*z,fitsref);
+  }
 
   fits_close_file(fitsref.fptr,&status);
   if (status) fits_report_error(stderr,status);

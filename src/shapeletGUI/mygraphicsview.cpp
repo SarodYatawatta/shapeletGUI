@@ -324,13 +324,13 @@ int MyGraphicsView::decompose(void)
   int n0=-1;
 
   // use APC if image is too large
-  if (this->Nx_*this->Ny_ < 100) {
+  if (this->Nx_*this->Ny_ > 10000) {
     std::cout<<"Image too large "<<this->Nx_<<" "<<this->Ny_<<std::endl;
     Nx=this->Nx_;
     Ny=this->Ny_;
     clearMemory();
     scene->clear();
-    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&Nx, &Ny, &beta,&M,&n0,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_));
+    apc_decompose_fits_file(this->fileName().toLocal8Bit().data(),this->cutoff(),&Nx, &Ny, &beta,&M,&n0,&(this->pix_),&(this->av_),&(this->z_),&(this->cen_),0,10,8);
   } else {
     clearMemory();
     scene->clear();

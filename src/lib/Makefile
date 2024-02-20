@@ -10,14 +10,14 @@ WCSLIBS= -lwcs
 #LAPACK=-L/usr/lib/atlas/sse2 -llapack -lblas
 #LAPACK=-L/usr/local/GotoBLAS2/lib -lgoto2 -lpthread -lgfortran
 #LAPACK=-L/usr/local/OpenBLAS/lib -lopenblas -lpthread -lgfortran
-LAPACK=-L/usr/lib -lopenblas -lpthread -lgfortran
+LAPACK=-L/usr/lib -lopenblas -lpthread
 
-INCLUDES= -I. -I/usr/include $(WCSI) $(LMINCLUDE) $(L1INCLUDE)
-LIBPATH= -L/usr/lib $(WCSL) $(LMLIB) $(L1LIB)
+INCLUDES= -I. -I/usr/include $(WCSI) 
+LIBPATH= -L/usr/lib $(WCSL)
 
 RANLIB=ranlib
-OBJECTS=hermite.o lapack.o shapelet_lm.o shapelet_uv.o \
-       decom_fits.o fits_utils.o fft.o multi_fits.o
+OBJECTS=hermite.o lapack.o myblas.o shapelet_lm.o shapelet_uv.o \
+       decom_fits.o fits_utils.o fft.o multi_fits.o apc.o
 default:libshapelet.a
 fits_utils.o:fits_utils.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
@@ -29,12 +29,20 @@ decom_fits.o:decom_fits.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 lapack.o:lapack.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+myblas.o:myblas.c shapelet.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 hermite.o:hermite.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 fft.o:fft.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
 multi_fits.o:multi_fits.c shapelet.h
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+apc.o:apc.c shapelet.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+main.o:main.c shapelet.h
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+main:$(OBJECTS) main.o
+	$(CC)  $(OBJECTS) main.o -o $@ $(CFLAGS) $(LIBPATH) $(LAPACK) $(CLIBS) $(WCSLIBS)
 
 libshapelet.a:$(OBJECTS)
 	ar rv libshapelet.a $(OBJECTS); \
@@ -43,4 +51,3 @@ libshapelet.a:$(OBJECTS)
 clean: $(OBJECTS) libshapelet.a
 	rm -rvf $(OBJECTS) libshapelet.a
 	rm -rvf *~ core *.core
-

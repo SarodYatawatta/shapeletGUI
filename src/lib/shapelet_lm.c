@@ -23,6 +23,7 @@
 #include <string.h>
 #include <fitsio.h>
 #include <math.h>
+#include <pthread.h>
 
 #include "shapelet.h"
 
@@ -727,3 +728,105 @@ calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0,
   return 0;
 }
 
+
+typedef struct thread_data_pix_t_ {
+  double *x;
+  double *y;
+  double beta;
+  int start,end,N,n0;
+  double *A;
+  double *fact;
+} thread_data_pix_t;
+
+static void*
+calculate_modes_th(void *data) {
+  thread_data_pix_t *t=(thread_data_pix_t*)data;
+  for (int ci=t->start; ci<=t->end; ci++) {
+    double xx=t->x[ci]/t->beta;
+    double yy=t->y[ci]/t->beta;
+    int cj=0;
+    for (int n2=0; n2<t->n0; n2++) {
+      for (int n1=0; n1<t->n0; n1++) {
+        t->A[ci+cj*t->N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*t->fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*t->fact[n2]));
+        cj++;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+/* multi threaded version */
+int
+calculate_mode_vectors_thread(double *x, double *y, int N,  double beta, int n0, double **Av, int Nt) {
+
+  /* set up factorial array */
+  double *fact;
+  if ((fact=(double*)calloc((size_t)(n0),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  fact[0]=1.0;
+  for (int ci=1; ci<(n0); ci++) {
+    fact[ci]=(ci)*fact[ci-1];
+  }
+
+  if ((*Av=(double*)calloc((size_t)(N*(n0)*(n0)),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* divide N pixels into Nt subsets */
+  int Nthb0,Nthb;
+  pthread_attr_t attr;
+  pthread_t *th_array;
+  thread_data_pix_t *threaddata;
+  /* setup threads */
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
+  if ((th_array=(pthread_t*)malloc((size_t)Nt*sizeof(pthread_t)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  if ((threaddata=(thread_data_pix_t*)malloc((size_t)Nt*sizeof(thread_data_pix_t)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* calculate min values a thread can handle */
+  Nthb0=(N+Nt-1)/Nt;
+  /* iterate over threads, allocating indices per thread */
+  int ci=0;
+  int nth;
+  for (nth=0;  nth<Nt && ci<N; nth++) {
+    if (ci+Nthb0<N) {
+     Nthb=Nthb0;
+    } else {
+     Nthb=N-ci;
+    }
+    threaddata[nth].start=ci;
+    threaddata[nth].end=ci+Nthb-1;
+    threaddata[nth].A=*Av;
+    threaddata[nth].fact=fact;
+    threaddata[nth].beta=beta;
+    threaddata[nth].n0=n0;
+    threaddata[nth].x=x;
+    threaddata[nth].y=y;
+    threaddata[nth].N=N;
+    pthread_create(&th_array[nth],&attr,calculate_modes_th,(void*)(&threaddata[nth]));
+    /* next baseline set */
+    ci=ci+Nthb;
+  }
+  /* now wait for threads to finish */
+  for(int nth1=0; nth1<nth; nth1++) {
+   pthread_join(th_array[nth1],NULL);
+  }
+
+  pthread_attr_destroy(&attr);
+  free(th_array);
+  free(threaddata);
+
+  free(fact);
+  return 0;
+}
