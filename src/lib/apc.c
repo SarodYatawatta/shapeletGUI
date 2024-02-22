@@ -815,10 +815,12 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   /* find the scale difference between input image and model image */
   double img_norm=my_dnrm2(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],*img);
   double model_norm=my_dnrm2(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],*z);
-  /* rescale model to match image */
-  my_dscal(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],img_norm/model_norm,*z);
-  /* also rescale model coefficients */
-  my_dscal(modes,img_norm/model_norm,*av);
+  if (model_norm>0.0) {
+   /* rescale model to match image */
+   my_dscal(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],img_norm/model_norm,*z);
+   /* also rescale model coefficients */
+   my_dscal(modes,img_norm/model_norm,*av);
+  }
 
 
   /* if output file is given, write model to output */
