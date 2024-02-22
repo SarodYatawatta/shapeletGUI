@@ -179,6 +179,8 @@ elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, do
   double L=my_dnrm2(M*N,Av)*M*N;
   /* if L<1/1e-3, might diverge, so catch it */
   if (L<1.0/1e-3) { L=1.0/1e-3; }
+  /* if 1/L too small, will give zero solution, so catch it */
+  if (L>1.0/1e-9) { L=1.0/1e-9; }
 
   double t=1.0;
   for (int ci=0; ci<maxiter; ci++) {
@@ -191,6 +193,7 @@ elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, do
     my_dgemv('T',N,M,1.0,Av,N,residual,1,lambda,grad,1);
 
     my_daxpy(M,grad,-1.0/L,z);
+    printf("FISTA %d ||grad||=%lf lr=%e ||z||=%lf\n",ci,my_dnrm2(M,grad),1.0/L,my_dnrm2(M,z));
 
     /* soft threshold z and update x */
     if (mu>0.0) {

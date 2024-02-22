@@ -27,6 +27,10 @@
 
 #include "shapelet.h"
 
+/* various possibilities of the projection matrix */
+#define PROJ_MAT_ZERO 2 /* when Ai full rank, I-A'(A A')^-1 A = 0 */
+#define PROJ_MAT_I 1 /* when Ai=0 or ||Ai|| small, proj=I */
+#define PROJ_MAT_NOR 0 /* other cases, where we do need to use the projection matrix */
 
 /* lgrid,mgrid: l,m coordinate grid, each npix x 1 , l (deg),m (deg)
  * l0,m0 : coords of center (deg)
@@ -42,8 +46,7 @@
  * Calculate projection matrix and initial solution for this subproblem
  */
 static int
-calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0, double m0, int npix, float *b, float *P, float *x, int modes, double beta, int n0, int Nt) 
-{
+calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0, double m0, int npix, float *b, float *P, float *x, int *sflag, int modes, double beta, int n0, int Nt) {
 
   if (modes != n0*n0) {
     fprintf(stderr,"%s: %d: number of modes should agree with model order\n",__FILE__,__LINE__);
@@ -67,17 +70,14 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
   }
 
   /* Av (npix x modes) storage will be allocated within the routine */
-  //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
-  //calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
   calculate_mode_vectors_thread(l,m,npix,beta,n0,&Av,Nt);
 
+  *sflag=PROJ_MAT_NOR;
   /* check norm of Av, if too small skip calculation and set
    * projection to I and original solution to zero */
   double a_norm=my_dnrm2(modes*npix,Av);
   if (a_norm<1e-9) {
-    for (int ci=0; ci<modes*modes; ci++) {
-      P[ci]=1.0f;
-    }
+    *sflag=PROJ_MAT_I;
     for (int ci=0; ci<modes; ci++) {
       x[ci]=0.0f;
     }
@@ -88,7 +88,12 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
     printf("skipping finding projection/initial solution because norm is too low\n");
     return 0;
   }
+  /* if Av is full rank, projection matrix = 0 */
+  if (npix > modes) {
+    *sflag=PROJ_MAT_ZERO;
+  }
 
+  if (*sflag==PROJ_MAT_NOR) {
   /* projection P = eye(modes) - A' * (A * A')^{-1} A */
   double *AAt;
   if ((AAt=(double*)calloc((size_t)npix*npix,sizeof(double)))==0) {
@@ -192,6 +197,7 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
   }
   printf("];\n");
 #endif
+  } /* PROJ_MAT_NOR */
 
   /* x = pinv(A)*b = pinv(A' * A) * A' * b */
   double *bd,*xd;
@@ -211,8 +217,9 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
   /* find least squares estimate for x */
   //lsq_lapack(Av,bd,xd,npix,modes);
   // normalize b ~ ||b||=1 and scale back solution x
-  elasticnet_fista(Av,bd,xd,npix,modes,1e-3,1e-9,30);
+  elasticnet_fista(Av,bd,xd,npix,modes,1e-3,1e-9,300);
 
+  printf("||A||=%lf ||x||=%lf\n",a_norm,my_dnrm2(modes,xd));
   for (int ci=0; ci<modes; ci++) {
     x[ci]=(float)xd[ci];
   }
@@ -225,6 +232,7 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
   free(Av);
   return 0;
 }
+
 
 
 /* calculate model (coeffients given by z) 
@@ -370,6 +378,13 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
       exit(1);
   }
+  /* flag to indicate the usability of each subtask, default is PROJ_MAT_NOR */
+  int *sflag;
+  if ((sflag=(int*)calloc((size_t)J,sizeof(int)))==0) {
+      fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+      exit(1);
+  }
+
   /* for division into (almost equal) subimages  - reconstruction,
    * keep this lower than the number of columns */
   int Jimg=10;
@@ -602,7 +617,13 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
     }
     /* use the coordinate values to calculate the basis functions, and
      * the projection matrix, and the initial solution */
-    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci],modes,*beta, *n0, Nt);
+    calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci], &sflag[ci], modes,*beta, *n0, Nt);
+
+    printf("norm %d %f\n",ci,my_snrm2(modes*modes,P[ci]));
+    /* if projection matrix is not used, free up memory */
+    if (sflag[ci] != PROJ_MAT_NOR) {
+      free(P[ci]);
+    }
 
     free(lcoord);
     free(mcoord);
@@ -633,21 +654,39 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
       exit(1);
   }
 
+  /* count subtasks where valid projection matrix (!PROJ_MAT_I) */
+  int Jvalid=0;
+  for (int ci=0; ci<J; ci++) {
+    if (sflag[ci]!=PROJ_MAT_I) {
+      Jvalid++;
+    }
+  }
+  printf("valid subtasks %d\n",Jvalid);
   /* ADMM iterations */
   for (int admm=0; admm<Nadmm; admm++) {
     /* workers update their estimate */
     for (int ci=0; ci<J; ci++) {
        /* x_i <= x_i + gamma Proj_i (x - x_i) */
-       my_scopy(modes,x,1,xdiff,1);
-       my_saxpy(modes,xb[ci],-1.0f,xdiff);
-       my_sgemv('N',modes,modes,gamma,P[ci],modes,xdiff,1,1.0f,xb[ci],1);
+       if (sflag[ci]==PROJ_MAT_NOR) {
+        my_scopy(modes,x,1,xdiff,1);
+        my_saxpy(modes,xb[ci],-1.0f,xdiff);
+        my_sgemv('N',modes,modes,gamma,P[ci],modes,xdiff,1,1.0f,xb[ci],1);
+       } else if (sflag[ci]==PROJ_MAT_I) {
+        my_scopy(modes,x,1,xdiff,1);
+        my_saxpy(modes,xb[ci],-1.0f,xdiff);
+        my_saxpy(modes,xdiff,gamma,xb[ci]);
+       } //(sflag[ci]==PROJ_MAT_ZERO) no change
     }
     /* find mean x_i */
     memset(xdiff,0,modes*sizeof(float));
     for (int ci=0; ci<J; ci++) {
-      my_saxpy(modes,xb[ci],1.0f,xdiff);
+      if (sflag[ci]!=PROJ_MAT_I) {
+       my_saxpy(modes,xb[ci],1.0f,xdiff);
+      }
     }
-    my_sscal(modes,1.0f/(float)J,xdiff);
+    if(Jvalid>0) {
+     my_sscal(modes,1.0f/(float)J,xdiff);
+    }
     /* update current estimate (with momentum) */
     my_scopy(modes,x,1,xold,1); /* backup old for bookkeeping */
     /* x <= eta xnew + (1-eta) x */
@@ -672,13 +711,16 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   }
   for (int ci=0; ci<J; ci++) {
     free(b[ci]);
-    free(P[ci]);
+    if (sflag[ci]==PROJ_MAT_NOR) {
+     free(P[ci]);
+    }
     free(xb[ci]);
   }
   free(b);
   free(P);
   free(xb);
   free(x);
+  free(sflag);
 
   /* recreate pixel values based on the model, also read image */
   if ((*z=(double*)calloc((size_t) fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],sizeof(double)))==0) {
@@ -769,6 +811,14 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   cen->dec_d=(int)((int)cworldc[1]%180);
   cen->dec_m=(int)((cworldc[1]-cen->dec_d)*60.0);
   cen->dec_s=(cworldc[1]-cen->dec_d-cen->dec_m/60.0)*3600.0;
+
+  /* find the scale difference between input image and model image */
+  double img_norm=my_dnrm2(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],*img);
+  double model_norm=my_dnrm2(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],*z);
+  /* rescale model to match image */
+  my_dscal(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],img_norm/model_norm,*z);
+  /* also rescale model coefficients */
+  my_dscal(modes,img_norm/model_norm,*av);
 
 
   /* if output file is given, write model to output */

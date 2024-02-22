@@ -24,6 +24,7 @@
 #include <fitsio.h>
 #include <math.h>
 #include <pthread.h>
+#include <locale.h>
 
 #include "shapelet.h"
 
@@ -828,5 +829,37 @@ calculate_mode_vectors_thread(double *x, double *y, int N,  double beta, int n0,
   free(threaddata);
 
   free(fact);
+  return 0;
+}
+
+
+
+int
+save_decomposition(const char* filename, double beta, int n0, double *modes, position cen) {
+  setlocale(LC_NUMERIC,"POSIX"); /* dont print ',' instead of decimal '.' */
+  FILE *fp;
+  int i;
+  fp=fopen(filename,"w");
+
+  /* write to file */
+  /* first line RA (h,m,s) Dec (d,m,s) */
+  fprintf(fp,"%d %d %lf %d %d %lf\n",cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s);
+  /* first line: n0 beta scaled by 2pi*/
+  fprintf(fp,"%d %le\n",n0,beta*M_PI*2.0);
+  /* now each indiviaul mode, not ?? scaled by beta^2 */
+  for (i=0; i<n0*n0; i++)
+   fprintf(fp,"%d %le\n",i,modes[i]);
+  /* save LT parameters in parsable format */
+  fprintf(fp,"L %lf %lf %lf\n",1.0,1.0,0.0);
+  /* last lines additional info, save info on any linear transform used */
+  fprintf(fp,"#\n#\n");
+  fprintf(fp,"#a=%lf b=%lf theta=%lf p=%lf q=%lf\n",1.0,1.0,0.0,0.0,0.0);
+  /* save filename, original beta */
+  fprintf(fp,"#file=%s beta=%lf\n",filename,beta);
+  /* as help save full line to be included in sky model */
+  /*  name h m s d m s I Q U V spectral_index RM extent_X(rad) extent_Y(rad) pos_angle(rad) freq0 */
+  fprintf(fp,"# LSM format:\n");
+  fprintf(fp,"## %s %d %d %lf %d %d %lf 1 0 0 0 0 0 %lf %lf %lf 1000000.0\n",filename,cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s,1.0,1.0,0.0);
+  fclose(fp);
   return 0;
 }

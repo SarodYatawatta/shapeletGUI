@@ -222,6 +222,9 @@ calculate_mode_vectors_tf(double *x, int Nx, double *y, int Ny,
                    double a, double b, double theta,
 								        int *n0, double *beta, double **Av);
 
+
+extern int
+save_decomposition(const char* filename, double beta, int n0, double *modes, position cen);
 /*************************************************
  * shapelet_uv.c
  ************************************************/
