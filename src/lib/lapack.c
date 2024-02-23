@@ -180,7 +180,7 @@ elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, do
   /* if L<1/1e-3, might diverge, so catch it */
   if (L<1.0/1e-3) { L=1.0/1e-3; }
   /* if 1/L too small, will give zero solution, so catch it */
-  if (L>1.0/1e-9) { L=1.0/1e-9; }
+  if (L>1.0/1e-7) { L=1.0/1e-7; }
 
   double t=1.0;
   for (int ci=0; ci<maxiter; ci++) {
