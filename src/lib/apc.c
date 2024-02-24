@@ -480,7 +480,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   fitsref.arr_dims.hpix[2]=fitsref.arr_dims.hpix[3]=fitsref.arr_dims.lpix[2]=fitsref.arr_dims.lpix[3]=1;
   /* since data is row major, divide the data into rows (axis 1 or y axis)
   * to distribute the work */
-  if (Jimg<fitsref.arr_dims.d[1]) { Jimg=fitsref.arr_dims.d[1]; }
+  if (Jimg>fitsref.arr_dims.d[1]) { Jimg=fitsref.arr_dims.d[1]; }
   divide_into_subsets(Jimg,fitsref.arr_dims.d[1],lowp,highp);
 
   /* find l,m of image center because 
