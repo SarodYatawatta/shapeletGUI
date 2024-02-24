@@ -555,6 +555,14 @@ decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, doub
 extern int 
 apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen, char* outfile, int J, int Nt); 
 
+/**************************************************************
+ shapelet_cuda.cu
+**************************************************************/
+#ifdef HAVE_CUDA
+extern int
+calculate_mode_vectors_cuda(double *x, double *y, int N,  double beta, int n0, double **Av);
+#endif /* HAVE_CUDA */
+
 #ifdef __cplusplus
      } /* extern "C" */
 #endif

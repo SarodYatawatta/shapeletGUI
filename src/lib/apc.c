@@ -70,7 +70,11 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
   }
 
   /* Av (npix x modes) storage will be allocated within the routine */
+#ifndef HAVE_CUDA
   calculate_mode_vectors_thread(l,m,npix,beta,n0,&Av,Nt);
+#else
+  calculate_mode_vectors_cuda(l,m,npix,beta,n0,&Av);
+#endif /* HAVE_CUDA */
 
   *sflag=PROJ_MAT_NOR;
   /* check norm of Av, if too small skip calculation and set
@@ -271,9 +275,12 @@ evaluate_model_over_subimage(double *imgrid, double l0, double m0, int npix, dou
   }
 
   /* Av storage will be allocated within the routine */
-  //calculate_mode_vectors_bi(l,m,npix,beta,n0,&Av);
-  //calculate_mode_vectors_simple(l,m,npix,beta,n0,&Av);
+#ifndef HAVE_CUDA
   calculate_mode_vectors_thread(l,m,npix,beta,n0,&Av,Nt);
+#else
+  calculate_mode_vectors_cuda(l,m,npix,beta,n0,&Av);
+#endif /* HAVE_CUDA */
+
   for (int ci=0; ci<modes; ci++) {
     my_daxpy(npix,&Av[ci*npix],z[ci],b);
   }
