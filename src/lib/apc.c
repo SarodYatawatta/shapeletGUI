@@ -214,8 +214,9 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
       exit(1);
   }
 
+  /* while copying, also set negative pixels to zero */
   for (int ci=0; ci<npix; ci++) {
-    bd[ci]=(double)b[ci];
+    bd[ci]=(b[ci]>0.0f?(double)b[ci]:0.0f);
   }
 
   /* find least squares estimate for x */
@@ -627,7 +628,6 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
      * the projection matrix, and the initial solution */
     calculate_projection_matrix_and_solution(lcoord,mcoord,l0,m0,totalpix-tail,b[ci],P[ci],xb[ci], &sflag[ci], modes,*beta, *n0, Nt);
 
-    printf("norm %d %f\n",ci,my_snrm2(modes*modes,P[ci]));
     /* if projection matrix is not used, free up memory */
     if (sflag[ci] != PROJ_MAT_NOR) {
       free(P[ci]);
