@@ -394,7 +394,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
 
   /* for division into (almost equal) subimages  - reconstruction,
    * keep this lower than the number of columns */
-  int Jimg=10;
+  int Jimg=J;
   long int *lowp,*highp;
   if ((lowp=(long int*)calloc((size_t)Jimg,sizeof(long int)))==0) {
       fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
@@ -480,6 +480,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   fitsref.arr_dims.hpix[2]=fitsref.arr_dims.hpix[3]=fitsref.arr_dims.lpix[2]=fitsref.arr_dims.lpix[3]=1;
   /* since data is row major, divide the data into rows (axis 1 or y axis)
   * to distribute the work */
+  if (Jimg<fitsref.arr_dims.d[1]) { Jimg=fitsref.arr_dims.d[1]; }
   divide_into_subsets(Jimg,fitsref.arr_dims.d[1],lowp,highp);
 
   /* find l,m of image center because 
@@ -514,7 +515,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   /* read whole-image */
   fits_read_subset(fitsref.fptr, TFLOAT, fitsref.arr_dims.lpix, fitsref.arr_dims.hpix, increment,
         &nullval, image, &null_flag, &status);
-  if (status) fits_report_error(stderr,status);
+  if (status) { fits_report_error(stderr,status); exit(1); }
   /* create grid for whole-image */
   double *pixelc,*imgc,*worldc,*phic,*thetac;
   int *statc;
