@@ -216,12 +216,11 @@ calculate_projection_matrix_and_solution(double *lgrid, double *mgrid, double l0
 
   /* while copying, also set negative pixels to zero */
   for (int ci=0; ci<npix; ci++) {
-    bd[ci]=(b[ci]>0.0f?(double)b[ci]:0.0f);
+    bd[ci]=(b[ci]>0.0f?(double)b[ci]:0.0);
   }
 
   /* find least squares estimate for x */
   //lsq_lapack(Av,bd,xd,npix,modes);
-  // normalize b ~ ||b||=1 and scale back solution x
   elasticnet_fista(Av,bd,xd,npix,modes,1e-3,1e-9,300);
 
   printf("||A||=%lf ||x||=%lf\n",a_norm,my_dnrm2(modes,xd));
