@@ -716,8 +716,8 @@ calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0,
     double xx=x[ci]/beta;
     double yy=y[ci]/beta;
     int cj=0;
-    for (int n1=0; n1<n0; n1++) {
-      for (int n2=0; n2<n0; n2++) {
+    for (int n2=0; n2<n0; n2++) {
+      for (int n1=0; n1<n0; n1++) {
         (*Av)[ci+cj*N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*fact[n1])
           *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*fact[n2]));
         cj++;
@@ -746,8 +746,8 @@ calculate_modes_th(void *data) {
     double xx=t->x[ci]/t->beta;
     double yy=t->y[ci]/t->beta;
     int cj=0;
-    for (int n1=0; n1<t->n0; n1++) {
-      for (int n2=0; n2<t->n0; n2++) {
+    for (int n2=0; n2<t->n0; n2++) {
+      for (int n1=0; n1<t->n0; n1++) {
         t->A[ci+cj*t->N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*t->fact[n1])
           *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*t->fact[n2]));
         cj++;
