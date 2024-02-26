@@ -87,7 +87,7 @@ calculate_mode_vectors_cuda(double *x, double *y, int N,  double beta, int n0, d
   }
   fact[0]=1.0f;
   for (int ci=1; ci<(n0); ci++) {
-    fact[ci]=(ci)*fact[ci-1];
+    fact[ci]=float(ci)*fact[ci-1];
   }
 
   float *Ad=0;

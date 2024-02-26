@@ -190,7 +190,7 @@ calculate_uv_mode_vectors(double *u, int Nu, double *v, int Nv, double beta, int
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -349,7 +349,7 @@ calculate_uv_mode_vectors_scalar(double *u, int Nu, double *v, int Nv, double be
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -635,7 +635,7 @@ calculate_uv_mode_vectors_bi(double *u, double *v, int N,  double beta, int n0, 
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG

@@ -811,6 +811,7 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   free(highp);
 
   /* update image center information */
+  if (cworldc[0]<0.0) { cworldc[0]+=360.0; }
   cworldc[0]*=24.0/360.0;
   cen->ra_h=(int)((int)cworldc[0]%24);
   cen->ra_m=(int)((cworldc[0]-cen->ra_h)*60.0);
@@ -818,6 +819,9 @@ apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double 
   cen->dec_d=(int)((int)cworldc[1]%180);
   cen->dec_m=(int)((cworldc[1]-cen->dec_d)*60.0);
   cen->dec_s=(cworldc[1]-cen->dec_d-cen->dec_m/60.0)*3600.0;
+  /* catch negative declination min,sec */
+  if (cen->dec_m < 0.0) { cen->dec_m=-(cen->dec_m); }
+  if (cen->dec_s < 0.0) { cen->dec_s=-(cen->dec_s); }
 
   /* find the scale difference between input image and model image */
   double img_norm=my_dnrm2(fitsref.arr_dims.d[0]*fitsref.arr_dims.d[1],*img);

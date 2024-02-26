@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
 
 
   if (outmodes) {
-   save_decomposition(outmodes,beta,n0,model,center);
+   save_decomposition(outmodes,beta,n0,coeff,center);
   }
   if(infile) free(infile);
   if(outfile) free(outfile);
