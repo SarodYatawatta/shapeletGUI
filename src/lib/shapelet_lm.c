@@ -267,7 +267,7 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
 				*/
 				 xval=grid[zci]/(*beta);
 				 //shpvl[zci][xci]=inv_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((double)(2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
@@ -547,7 +547,7 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 				*/
 				 double xvalt=grid[zci]/(beta);
 				 //shpvl[zci][xci]=inv_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xvalt,xci)*exp(-0.5*xvalt*xvalt)/sqrt((2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xvalt,xci)*exp(-0.5*xvalt*xvalt)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
@@ -718,8 +718,8 @@ calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0,
     int cj=0;
     for (int n2=0; n2<n0; n2++) {
       for (int n1=0; n1<n0; n1++) {
-        (*Av)[ci+cj*N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*fact[n1])
-          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*fact[n2]));
+        (*Av)[ci+cj*N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt(pow(2.0,(double)n1+1)*fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt(pow(2.0,(double)n2+1)*fact[n2]));
         cj++;
       }
     }
@@ -748,8 +748,8 @@ calculate_modes_th(void *data) {
     int cj=0;
     for (int n2=0; n2<t->n0; n2++) {
       for (int n1=0; n1<t->n0; n1++) {
-        t->A[ci+cj*t->N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt((double)(2<<n1)*t->fact[n1])
-          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt((double)(2<<n2)*t->fact[n2]));
+        t->A[ci+cj*t->N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt(pow(2.0,(double)n1+1)*t->fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt(pow(2.0,(double)n2+1)*t->fact[n2]));
         cj++;
       }
     }
