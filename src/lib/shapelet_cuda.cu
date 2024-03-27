@@ -41,30 +41,6 @@ H_e(float x, int n) {
   return Hn;
 }
 
-/* Hermite polynomial, non recursive version, suitable for large n
- scaled down, He/sqrt(2^n * n!) to prevent overflow */
-__device__ float
-H_e_scaled(float x, int n, float *fact) {
-  const float scalefactor=sqrtf(powf(2.0f,(float)n+1)*sqrtf(fact[n]));
-  if(n==0) return 1.0f/scalefactor;
-  if(n==1) return 2.0f*x/scalefactor;
-  /* else iterate */
-  float Hn_1,Hn,Hnp1;
-  Hn_1=1.0f/scalefactor;
-  Hn=2.0f*x/scalefactor;
-  int ci;
-  for (ci=1; ci<n; ci++) {
-    Hnp1=2.0f*x*Hn-2.0f*((float)ci)*Hn_1;
-    Hn_1=Hn;
-    Hn=Hnp1;
-  }
-
-  return Hn;
-}
-
-
-#define LARGE_MODE_LIMIT 20
-
 __global__ void 
 kernel_calculate_shapelet_lm(float *Ad,float *xd,float *yd,float *fact,float beta,int N,int n0, int startpix, int endpix) {
   /* pixel 0..N, n+startpix */
@@ -79,15 +55,9 @@ kernel_calculate_shapelet_lm(float *Ad,float *xd,float *yd,float *fact,float bet
    float xx=xd[n]/beta;
    float yy=yd[n]/beta;
 
-  if (n1<LARGE_MODE_LIMIT && n2<LARGE_MODE_LIMIT) {
-   /* for large n1,n2 H_e/sqrt() diverge to give NaNs, fix this */
    Ad[n+mode*N]=H_e(xx,n1)/sqrtf(powf(2.0f,(float)n1+1)*fact[n1])*expf(-0.5f*xx*xx)
     *H_e(yy,n2)/sqrtf(powf(2.0f,(float)n2+1)*fact[n2])*expf(-0.5f*yy*yy);
-  } else {
-    /* scaled down way of calculation, preventing overflow */
-   Ad[n+mode*N]=H_e_scaled(xx,n1,fact)*expf(-0.5f*xx*xx)
-    *H_e_scaled(yy,n2,fact)*expf(-0.5f*yy*yy);
-  }
+
   }
 }
 
