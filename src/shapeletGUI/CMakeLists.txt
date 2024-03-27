@@ -40,4 +40,3 @@ set_property(TARGET shapeletGUI PROPERTY AUTOMOC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTORCC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTOUIC ON)
 install(TARGETS shapeletGUI DESTINATION bin)
-
