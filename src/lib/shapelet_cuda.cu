@@ -45,7 +45,7 @@ H_e(float x, int n) {
  scaled down, He/sqrt(2^n * n!) to prevent overflow */
 __device__ float
 H_e_scaled(float x, int n, float *fact) {
-  const float scalefactor=sqrtf(powf(2.0f,(float)n+1)*sqrtf(fact[n]);
+  const float scalefactor=sqrtf(powf(2.0f,(float)n+1)*sqrtf(fact[n]));
   if(n==0) return 1.0f/scalefactor;
   if(n==1) return 2.0f*x/scalefactor;
   /* else iterate */
