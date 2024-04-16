@@ -72,7 +72,7 @@ find_package(Threads REQUIRED)
 message(STATUS "\n############################\n#   Searching ShapeletGUI dependencies\n############################")
 #CUDA
 if(HAVE_CUDA)
-    message (STATUS "Compiling SageCal with GPU support.")
+    message (STATUS "Compiling with GPU support.")
     enable_language(CUDA)
     find_package(CUDA QUIET REQUIRED)
     find_package(NVML REQUIRED)
