@@ -50,6 +50,7 @@ list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/CMakeModules)
 
 #--------------------------------------- user options
 option (ENABLE_MPI "Enable MPI support" OFF)
+option (HAVE_CUDA "Enable CUDA support" OFF)
 
 #--------------------------------------- rpath setup for libraries
 
@@ -69,6 +70,14 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 message(STATUS "\n############################\n#   Searching ShapeletGUI dependencies\n############################")
+#CUDA
+if(HAVE_CUDA)
+    message (STATUS "Compiling SageCal with GPU support.")
+    enable_language(CUDA)
+    find_package(CUDA QUIET REQUIRED)
+    find_package(NVML REQUIRED)
+endif()
+
 # BLAS: use -DBLA_VENDOR=OpenBLAS for OpenBLAS
 find_package(BLAS REQUIRED)
 include_directories(${BLAS_INCLUDE_DIR})
@@ -115,6 +124,19 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -pg -Wall -DNDEBUG -Wextr
 set (CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(HAVE_CUDA)
+  # check if -DCUDA_NVCC_FLAGS is defined by user
+  # if not, use default settings
+  if(NOT CUDA_NVCC_FLAGS)
+    set(CUDA_NVCC_FLAGS "-gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_62,code=sm_62 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 --ptxas-options=-v")
+  endif()
+  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -DHAVE_CUDA")
+
+  # definition for preprocessor
+  # TODO: check target_add_definition()
+  add_definitions(-DHAVE_CUDA)
+endif()
+
 
 #--------------------------------------- summary
 message(STATUS "\n############################\n#   Configuration summary\n############################")
@@ -142,6 +164,28 @@ message (STATUS "CFITSIO_LIB................ = ${CFITSIO_LIB}")
 message (STATUS "WCSLIB_INCLUDE_DIRS........ = ${WCSLIB_INCLUDE_DIRS}")
 message (STATUS "WCSLIB_LIBRARIES .......... = ${WCSLIB_LIBRARIES}")
 
+if(HAVE_CUDA)
+  message (STATUS "CUDA_VERSION .............. = ${CUDA_VERSION}")
+  message (STATUS "CMAKE_CUDA_COMPILER ....... = ${CMAKE_CUDA_COMPILER}")
+  message (STATUS "CMAKE_CUDA_FLAGS .......... = ${CMAKE_CUDA_FLAGS}")
+  message (STATUS "CMAKE_CUDA_FLAGS_DEBUG .... = ${CMAKE_CUDA_FLAGS_DEBUG}")
+  message (STATUS "CMAKE_CUDA_FLAGS_RELEASE .. = ${CMAKE_CUDA_FLAGS_RELEASE}")
+
+  message (STATUS "CMAKE_CUDA_HOST_COMPILER .. = ${CMAKE_CUDA_HOST_COMPILER}")
+  message (STATUS "CUDACXX ................... = ${CUDACXX}")
+  message (STATUS "CUDAHOSTCXX ............... = ${CUDAHOSTCXX}")
+
+  message (STATUS "CUDA_TOOLKIT_ROOT_DIR ..... = ${CUDA_TOOLKIT_ROOT_DIR}")
+  message (STATUS "CUDA_INCLUDE_DIRS ......... = ${CUDA_INCLUDE_DIRS}")
+  message (STATUS "CUDA_LIBRARIES ............ = ${CUDA_LIBRARIES}")
+  message (STATUS "CUDA_CUBLAS_LIBRARIES ..... = ${CUDA_CUBLAS_LIBRARIES}")
+  message (STATUS "CUDA_NVCC_FLAGS ........... = ${CUDA_NVCC_FLAGS}")
+  message (STATUS "NVCFLAGS .................. = ${NVCFLAGS}")
+
+  message (STATUS "NVML ...................... = ${NVML}")
+  message (STATUS "NVML_LIB_PATH ............. = ${NVML_LIB_PATH}")
+  message (STATUS "NVML_INCLUDE_PATH ......... = ${NVML_INCLUDE_PATH}")
+endif()
 #--------------------------------------- include directories
 add_subdirectory(src)
 

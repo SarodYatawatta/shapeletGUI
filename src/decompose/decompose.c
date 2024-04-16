@@ -30,6 +30,7 @@
 
 void
 print_help(void) {
+   fprintf(stderr,"Decompose a very large FITS file without running out of memory.\n");
    fprintf(stderr,"Usage:\n");
    fprintf(stderr,"-f infile.fits -m modes -b beta -o outfile.fits -j jobs -s out.txt\n");
    fprintf(stderr,"-f : input FITS image\n");

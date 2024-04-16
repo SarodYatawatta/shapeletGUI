@@ -11,6 +11,13 @@ link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
 
 target_link_libraries(${target} shapelet)
 
+if(HAVE_CUDA)
+    CUDA_INCLUDE_DIRECTORIES(${CUDA_INCLUDE_DIRS})
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/../lib)
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+
+else()
+
 qt_add_executable(shapeletGUI
     optionsdialog.ui
     shapeletmain.ui
@@ -40,3 +47,5 @@ set_property(TARGET shapeletGUI PROPERTY AUTOMOC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTORCC ON)
 set_property(TARGET shapeletGUI PROPERTY AUTOUIC ON)
 install(TARGETS shapeletGUI DESTINATION bin)
+
+endif()
