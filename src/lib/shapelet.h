@@ -186,6 +186,13 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
 extern int
 calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, double **Av);
 
+/* no sorting etc, just simple calculations */
+extern int
+calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0, double **Av);
+
+/* multi-threaded version */
+extern int
+calculate_mode_vectors_thread(double *x, double *y, int N,  double beta, int n0, double **Av, int Nt);
 
 /* calculate mode vectors for the regular grid given by the x,y arrays after 
  * performing the given linear transform. i.e.,
@@ -215,6 +222,9 @@ calculate_mode_vectors_tf(double *x, int Nx, double *y, int Ny,
                    double a, double b, double theta,
 								        int *n0, double *beta, double **Av);
 
+
+extern int
+save_decomposition(const char* filename, double beta, int n0, double *modes, position cen);
 /*************************************************
  * shapelet_uv.c
  ************************************************/
@@ -303,26 +313,61 @@ calculate_uv_mode_vectors_tf(double *u, int Nu, double *v, int Nv,
 extern int 
 lsq_lapack(double *Av,double *b,double *x, int N, int M);
 
+
+/* solve the linear least squares problem using FISTA */
+/* min_x |Ax-b|_2 norm + mu |x|_1 + lambda |x|_2^2 */
+/* A: N by M, N> M
+ * b: N by 1 vector
+ * x: M by 1 vector
+ * mu: L1 penalty, lambda L2 penalty */
+extern int
+elasticnet_fista(double *Av,double *b,double *x, int N, int M, double lambda, double mu, int maxiter);
+
+/*******************************************************
+ * myblas.c
+ *******************************************************/
 /* y = a.x + y */
 extern void
-daxpy(int N, double *x, double a, double *y);
+my_daxpy(int N, double *x, double a, double *y);
+extern void
+my_saxpy(int N, float *x, float a, float *y);
 /* y = x */
 extern void
-dcopy(int N, double *x, double *y); 
+my_dcopy(int N, double *x, int Nx, double *y, int Ny); 
+extern void
+my_scopy(int N, float *x, int Nx, float *y, int Ny);
 /* scale */
 extern void
-dscal(int N, double a, double *x);
+my_dscal(int N, double a, double *x);
+extern void
+my_sscal(int N, float a, float *x);
 /* norm || ||_2 */
 extern double
-dnrm2(int N, double *x);
+my_dnrm2(int N, double *x);
+extern float
+my_snrm2(int N, float *x);
 /* max |x| id, start from 1... */
 extern int
-idamax(int N, double *x, int incx);
+my_idamax(int N, double *x, int incx);
 /* min |x| id, start from 1... */
 extern int
-idamin(int N, double *x, int incx);
+my_idamin(int N, double *x, int incx);
 
+/* BLAS DGEMM C = alpha*op(A)*op(B)+ beta*C */
+/* op(A) : M x K, op(B) : K x N, C: MxN */
+extern void
+my_dgemm(char transa, char transb, int M, int N, int K, double alpha, double *A, int lda, double *B, int ldb, double beta, double *C, int ldc);
 
+/* A=U S VT, so V needs NOT to be transposed */
+extern int
+my_dgesvd(char JOBU, char JOBVT, int M, int N, double *A, int LDA, double *S,
+   double *U, int LDU, double *VT, int LDVT, double *WORK, int LWORK);
+
+/* BLAS SGEMV  y = alpha*op(A)*x+ beta*y : op 'T' or 'N' */
+extern void
+my_dgemv(char trans, int M, int N, double alpha, double *A, int lda, double *x, int incx,  double beta, double *y, int incy);
+extern void
+my_sgemv(char trans, int M, int N, float alpha, float *A, int lda, float *x, int incx,  float beta, float *y, int incy);
 /*******************************************************
  * decom_fits.c
  ******************************************************/
@@ -499,6 +544,24 @@ read_fits_dir(const char *fitsdir, double cutoff, double**myarr, long int *new_n
  */
 extern int 
 decompose_fits_dir(const char *fitsdir, double cutoff, double **x, int *Nx, double **y, int *Ny, double *beta, int *M, int *n0, double p, double q, double clipmin, double clipmax, int *Nf, double **freqs, double **b, double **av, double **z, position *cen, int convolve_psf, char *psf_filename, int use_mask);
+
+/**************************************************************
+ apc.c 
+**************************************************************/
+/* outfile: model will be written to this FITS file 
+ * J: number of subtasks 
+ * Nt: number of threads
+ */
+extern int 
+apc_decompose_fits_file(char* filename, double cutoff, int *Nx, int *Ny, double *beta, int *M, int *n0, double **img, double **av, double **z, position *cen, char* outfile, int J, int Nt); 
+
+/**************************************************************
+ shapelet_cuda.cu
+**************************************************************/
+#ifdef HAVE_CUDA
+extern int
+calculate_mode_vectors_cuda(double *x, double *y, int N,  double beta, int n0, double **Av);
+#endif /* HAVE_CUDA */
 
 #ifdef __cplusplus
      } /* extern "C" */

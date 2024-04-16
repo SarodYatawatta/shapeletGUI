@@ -23,6 +23,8 @@
 #include <string.h>
 #include <fitsio.h>
 #include <math.h>
+#include <pthread.h>
+#include <locale.h>
 
 #include "shapelet.h"
 
@@ -227,7 +229,7 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
 	}
   fact[0]=1.0;
 	for (xci=1; xci<(*n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -265,7 +267,7 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
 				*/
 				 xval=grid[zci]/(*beta);
 				 //shpvl[zci][xci]=inv_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((double)(2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
@@ -339,7 +341,8 @@ calculate_mode_vectors(double *x, int Nx, double *y, int Ny, int *M, double
  *      beta: scale factor
  *      n0: number of modes in each dimension
  * out:        
- *      Av: array of mode vectors size N times n0.n0, in column major order
+ *      Av: array of mode vectors size N times n0.n0, in column major order, 
+ *      i.e., first N values for 0-th mode, second N values for 1-st mode ...
  *
  */
 int
@@ -352,7 +355,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 
 	double **shpvl, *fact;
 	int n1,n2,start;
-	//double pi_4r=1/sqrt(sqrt(M_PI));
 
   /* for sorting */
   coordval *cx_val,*cy_val; 
@@ -412,8 +414,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	 if (cx_val[xci].val==cy_val[yci].val){
 		/* common index */
 		grid[zci]=cx_val[xci].val;
-		/*xindex[xci]=zci;
-		yindex[yci]=zci; */
     xindex[cx_val[xci].idx]=zci;
     yindex[cy_val[yci].idx]=zci;
 	  zci++;
@@ -421,13 +421,11 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	  yci++;	 
 	 } else if (cx_val[xci].val<cy_val[yci].val){
 		 grid[zci]=cx_val[xci].val;
-		 //xindex[xci]=zci;
      xindex[cx_val[xci].idx]=zci;
 	   zci++;
 	   xci++;	 
 	 } else {
 		 grid[zci]=cy_val[yci].val;
-		 //yindex[yci]=zci;
      yindex[cy_val[yci].idx]=zci;
 	   zci++;
 	   yci++;	 
@@ -438,7 +436,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 		/* tail from x */
 		while(xci<N) {
 		 grid[zci]=cx_val[xci].val;
-		 //xindex[xci]=zci;
      xindex[cx_val[xci].idx]=zci;
 	   zci++;
 	   xci++;	 
@@ -447,7 +444,6 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 		/* tail from y */
 		while(yci<N) {
 		 grid[zci]=cy_val[yci].val;
-		 //yindex[yci]=zci;
      yindex[cy_val[yci].idx]=zci;
 	   zci++;
 	   yci++;	 
@@ -513,7 +509,7 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -551,7 +547,7 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 				*/
 				 double xvalt=grid[zci]/(beta);
 				 //shpvl[zci][xci]=inv_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xvalt,xci)*exp(-0.5*xvalt*xvalt)/sqrt((2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xvalt,xci)*exp(-0.5*xvalt*xvalt)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
@@ -586,17 +582,19 @@ calculate_mode_vectors_bi(double *x, double *y, int N,  double beta, int n0, dou
 	}
 
 #ifdef DEBUG
-	printf("Matrix dimension=%d by %d\n",N,(n0)*(n0));
+	printf("%%Matrix dimension=%d by %d\n",N,(n0)*(n0));
+  printf("A=[\n");
+	for (xci=0; xci<N; xci++) {
 	for (n1=0; n1<(n0); n1++) {
 	 for (n2=0; n2<(n0); n2++) {
-    /* fill in N*N*(zci) to N*N*(zci+1)-1 */
+    /* N*(zci) to N*(zci+1)-1 */
 		start=N*(n1*(n0)+n2);
-	  for (xci=0; xci<N; xci++) {
-        printf("%lf ",(*Av)[start+xci]);
-		}
-		printf("\n");
+    printf("%lf ",(*Av)[start+xci]);
+    }
 	 }
+	 printf("\n");
 	}
+  printf("];\n");
 #endif
 	free(grid);
 	free(xindex);
@@ -691,4 +689,177 @@ calculate_mode_vectors_tf(double *x, int Nx, double *y, int Ny,
  free(xx);
  free(yy);
  return 0;
+}
+
+
+
+int
+calculate_mode_vectors_simple(double *x, double *y, int N,  double beta, int n0, double **Av) {
+
+  /* set up factorial array */
+  double *fact;
+  if ((fact=(double*)calloc((size_t)(n0),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  fact[0]=1.0;
+  for (int ci=1; ci<(n0); ci++) {
+    fact[ci]=((double)ci)*fact[ci-1];
+  }
+
+  if ((*Av=(double*)calloc((size_t)(N*(n0)*(n0)),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  for (int ci=0; ci<N; ci++) {
+    double xx=x[ci]/beta;
+    double yy=y[ci]/beta;
+    int cj=0;
+    for (int n2=0; n2<n0; n2++) {
+      for (int n1=0; n1<n0; n1++) {
+        (*Av)[ci+cj*N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt(pow(2.0,(double)n1+1)*fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt(pow(2.0,(double)n2+1)*fact[n2]));
+        cj++;
+      }
+    }
+  }
+
+  free(fact);
+  return 0;
+}
+
+
+typedef struct thread_data_pix_t_ {
+  double *x;
+  double *y;
+  double beta;
+  int start,end,N,n0;
+  double *A;
+  double *fact;
+} thread_data_pix_t;
+
+static void*
+calculate_modes_th(void *data) {
+  thread_data_pix_t *t=(thread_data_pix_t*)data;
+  for (int ci=t->start; ci<=t->end; ci++) {
+    double xx=t->x[ci]/t->beta;
+    double yy=t->y[ci]/t->beta;
+    int cj=0;
+    for (int n2=0; n2<t->n0; n2++) {
+      for (int n1=0; n1<t->n0; n1++) {
+        t->A[ci+cj*t->N]=H_e(xx,n1)*exp(-0.5*xx*xx)/sqrt(pow(2.0,(double)n1+1)*t->fact[n1])
+          *H_e(yy,n2)*exp(-0.5*yy*yy)/(sqrt(pow(2.0,(double)n2+1)*t->fact[n2]));
+        cj++;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+/* multi threaded version */
+int
+calculate_mode_vectors_thread(double *x, double *y, int N,  double beta, int n0, double **Av, int Nt) {
+
+  /* set up factorial array */
+  double *fact;
+  if ((fact=(double*)calloc((size_t)(n0),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  fact[0]=1.0;
+  for (int ci=1; ci<(n0); ci++) {
+    fact[ci]=((double)ci)*fact[ci-1];
+  }
+
+  if ((*Av=(double*)calloc((size_t)(N*(n0)*(n0)),sizeof(double)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* divide N pixels into Nt subsets */
+  int Nthb0,Nthb;
+  pthread_attr_t attr;
+  pthread_t *th_array;
+  thread_data_pix_t *threaddata;
+  /* setup threads */
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr,PTHREAD_CREATE_JOINABLE);
+  if ((th_array=(pthread_t*)malloc((size_t)Nt*sizeof(pthread_t)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+  if ((threaddata=(thread_data_pix_t*)malloc((size_t)Nt*sizeof(thread_data_pix_t)))==0) {
+    fprintf(stderr,"%s: %d: no free memory\n",__FILE__,__LINE__);
+    exit(1);
+  }
+
+  /* calculate min values a thread can handle */
+  Nthb0=(N+Nt-1)/Nt;
+  /* iterate over threads, allocating indices per thread */
+  int ci=0;
+  int nth;
+  for (nth=0;  nth<Nt && ci<N; nth++) {
+    if (ci+Nthb0<N) {
+     Nthb=Nthb0;
+    } else {
+     Nthb=N-ci;
+    }
+    threaddata[nth].start=ci;
+    threaddata[nth].end=ci+Nthb-1;
+    threaddata[nth].A=*Av;
+    threaddata[nth].fact=fact;
+    threaddata[nth].beta=beta;
+    threaddata[nth].n0=n0;
+    threaddata[nth].x=x;
+    threaddata[nth].y=y;
+    threaddata[nth].N=N;
+    pthread_create(&th_array[nth],&attr,calculate_modes_th,(void*)(&threaddata[nth]));
+    /* next baseline set */
+    ci=ci+Nthb;
+  }
+  /* now wait for threads to finish */
+  for(int nth1=0; nth1<nth; nth1++) {
+   pthread_join(th_array[nth1],NULL);
+  }
+
+  pthread_attr_destroy(&attr);
+  free(th_array);
+  free(threaddata);
+
+  free(fact);
+  return 0;
+}
+
+
+
+int
+save_decomposition(const char* filename, double beta, int n0, double *modes, position cen) {
+  setlocale(LC_NUMERIC,"POSIX"); /* dont print ',' instead of decimal '.' */
+  FILE *fp;
+  int i;
+  fp=fopen(filename,"w");
+
+  /* write to file */
+  /* first line RA (h,m,s) Dec (d,m,s) */
+  fprintf(fp,"%d %d %lf %d %d %lf\n",cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s);
+  /* first line: n0 beta scaled by 2pi*/
+  fprintf(fp,"%d %le\n",n0,beta*M_PI*2.0);
+  /* now each indiviaul mode, not ?? scaled by beta^2 */
+  for (i=0; i<n0*n0; i++)
+   fprintf(fp,"%d %le\n",i,modes[i]);
+  /* save LT parameters in parsable format */
+  fprintf(fp,"L %lf %lf %lf\n",1.0,1.0,0.0);
+  /* last lines additional info, save info on any linear transform used */
+  fprintf(fp,"#\n#\n");
+  fprintf(fp,"#a=%lf b=%lf theta=%lf p=%lf q=%lf\n",1.0,1.0,0.0,0.0,0.0);
+  /* save filename, original beta */
+  fprintf(fp,"#file=%s beta=%lf\n",filename,beta);
+  /* as help save full line to be included in sky model */
+  /*  name h m s d m s I Q U V spectral_index RM extent_X(rad) extent_Y(rad) pos_angle(rad) freq0 */
+  fprintf(fp,"# LSM format:\n");
+  fprintf(fp,"## %s %d %d %lf %d %d %lf 1 0 0 0 0 0 %lf %lf %lf 1000000.0\n",filename,cen.ra_h,cen.ra_m,cen.ra_s, cen.dec_d,cen.dec_m,cen.dec_s,1.0,1.0,0.0);
+  fclose(fp);
+  return 0;
 }

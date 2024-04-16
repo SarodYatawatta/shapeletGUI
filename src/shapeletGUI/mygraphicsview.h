@@ -184,6 +184,7 @@ private:
  double *pix_; // pixel values, for single and multiple FITS Nfxpixels
  double *x_; // l grid values
  double *y_; // m grid values
+ int Nx_{0},Ny_{0}; // image dimension
  // following for multiple FITS files
  int Nf_; // number of frequencies
  double *freqs_; //frequency grid Nfx1

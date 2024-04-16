@@ -1,4 +1,4 @@
-wo  9 aug 2023 12:32:11 CEST
+di 16 apr 2024 23:59:13 CEST
 # ShapeletGUI Installation
 
 ## Pre-requisites:
@@ -15,6 +15,12 @@ Using cmake it is simple as the following:
  mkdir build && cd build
  cmake ..
  make
+```
+
+### CUDA support
+Build with CUDA using cmake, something like
+```
+cmake -DHAVE_CUDA=ON -DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc -DCMAKE_CUDA_ARCHITECTURES=75 ..
 ```
 
 ## Compile the library (without cmake)

@@ -190,7 +190,7 @@ calculate_uv_mode_vectors(double *u, int Nu, double *v, int Nv, double beta, int
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -228,7 +228,7 @@ calculate_uv_mode_vectors(double *u, int Nu, double *v, int Nv, double beta, int
 				*/
 				 xval=grid[zci]*beta;
 				 //shpvl[zci][xci]=sqr_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((double)(2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
@@ -349,7 +349,7 @@ calculate_uv_mode_vectors_scalar(double *u, int Nu, double *v, int Nv, double be
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -379,13 +379,13 @@ calculate_uv_mode_vectors_scalar(double *u, int Nu, double *v, int Nv, double be
 	for (xci=0; xci<n0; xci++) {
 		xval=u[0]*beta;
 		//shpvl[zci][xci]=sqr_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-		shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
+		shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 	}
 	zci=1;
 	for (xci=0; xci<n0; xci++) {
 		xval=v[0]*beta;
 		//shpvl[zci][xci]=sqr_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-		shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
+		shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 	}
 
 
@@ -635,7 +635,7 @@ calculate_uv_mode_vectors_bi(double *u, double *v, int N,  double beta, int n0, 
 	}
   fact[0]=1;
 	for (xci=1; xci<(n0); xci++) {
-		fact[xci]=(xci)*fact[xci-1];
+		fact[xci]=((double)xci)*fact[xci-1];
 	}
 
 #ifdef DEBUG
@@ -678,7 +678,7 @@ calculate_uv_mode_vectors_bi(double *u, double *v, int N,  double beta, int n0, 
 				*/
 				 xval=grid[zci]*(beta);
 				 //shpvl[zci][xci]=inv_beta*pi_4r*H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
-				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt((2<<xci)*fact[xci]);
+				 shpvl[zci][xci]=H_e(xval,xci)*exp(-0.5*xval*xval)/sqrt(pow(2.0,(double)xci+1)*fact[xci]);
 		   }
 		 }
 	}
