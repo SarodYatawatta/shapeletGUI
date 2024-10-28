@@ -9,4 +9,7 @@ shapeletGUI
 decompose
 ```
 
-Read INSTALL.md for installation
+Read INSTALL.md for installation.
+
+Details of some of the algorithms can be found in the paper:
+[Diffuse radio sky models using large scale shapelets](https://arxiv.org/abs/2401.04428).
